@@ -18,14 +18,17 @@ const getShapeBounds = (shape: Shape): { width: number; height: number } => {
   }
 };
 
-export const arrangeShapes = (shapes: Shape[], spacing: number): Shape[] => {
+export const arrangeShapes = (shapes: Shape[], spacing: number, slab: Shape): Shape[] => {
   if (shapes.length === 0) return shapes;
+
+  const slabWidth = slab.type === "slab" ? slab.width : 80;
+  const slabHeight = slab.type === "slab" ? slab.height : 60;
 
   const arranged: Shape[] = [];
   let currentX = 1; // Start 1cm from edge
   let currentY = 1;
   let maxHeightInRow = 0;
-  const maxWidth = 75; // Maximum width before wrapping (75cm)
+  const maxWidth = slabWidth - 1; // Maximum width before wrapping (slab width - 1cm margin)
 
   shapes.forEach((shape) => {
     const bounds = getShapeBounds(shape);

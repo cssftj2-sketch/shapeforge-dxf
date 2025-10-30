@@ -1,10 +1,12 @@
 import { useRef, useEffect } from "react";
 import { Shape } from "@/types/shapes";
 interface ShapeCanvasProps {
+  slab: Shape;
   shapes: Shape[];
   spacing: number;
 }
 export const ShapeCanvas = ({
+  slab,
   shapes,
   spacing
 }: ShapeCanvasProps) => {
@@ -15,13 +17,25 @@ export const ShapeCanvas = ({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const scale = 10; // 1cm = 10px
+    const slabWidth = slab.type === "slab" ? slab.width * scale : 800;
+    const slabHeight = slab.type === "slab" ? slab.height * scale : 600;
+    
+    // Set canvas size to slab dimensions
+    canvas.width = slabWidth;
+    canvas.height = slabHeight;
+
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw slab background
+    ctx.fillStyle = "hsl(var(--muted))";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw grid
     ctx.strokeStyle = "hsl(var(--grid))";
     ctx.lineWidth = 0.5;
-    const gridSize = 10; // 1cm = 10px
+    const gridSize = scale; // 1cm = 10px
 
     for (let x = 0; x <= canvas.width; x += gridSize) {
       ctx.beginPath();
@@ -35,13 +49,17 @@ export const ShapeCanvas = ({
       ctx.lineTo(canvas.width, y);
       ctx.stroke();
     }
+    
+    // Draw slab border
+    ctx.strokeStyle = "hsl(var(--border))";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
     // Draw shapes
     ctx.fillStyle = "hsl(var(--primary))";
     ctx.strokeStyle = "hsl(var(--primary))";
     ctx.lineWidth = 2;
     shapes.forEach(shape => {
-      const scale = 10; // 1cm = 10px
       const x = shape.x * scale;
       const y = shape.y * scale;
       ctx.beginPath();
@@ -103,10 +121,10 @@ export const ShapeCanvas = ({
       ctx.fill();
       ctx.stroke();
     });
-  }, [shapes, spacing]);
+  }, [slab, shapes, spacing]);
   return <div className="border rounded-lg overflow-hidden shadow-sm" style={{
     backgroundColor: "hsl(var(--canvas-bg))"
   }}>
-      <canvas ref={canvasRef} width={800} height={600} className="w-full bg-white/[0.14]" />
+      <canvas ref={canvasRef} className="w-full" />
     </div>;
 };

@@ -13,13 +13,23 @@ import { Download, Layout } from "lucide-react";
 import { toast } from "sonner";
 
 const Index = () => {
+  const [slab, setSlab] = useState<Shape | null>(null);
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [arrangedShapes, setArrangedShapes] = useState<Shape[]>([]);
   const [spacing, setSpacing] = useState(1); // 1cm default spacing
 
   const handleAddShape = (shape: Shape) => {
-    setShapes([...shapes, shape]);
-    toast.success("Shape added successfully");
+    if (shape.type === "slab") {
+      setSlab(shape);
+      toast.success("Slab added successfully");
+    } else {
+      if (!slab) {
+        toast.error("Please add a slab first");
+        return;
+      }
+      setShapes([...shapes, shape]);
+      toast.success("Shape added successfully");
+    }
   };
 
   const handleRemoveShape = (id: string) => {
@@ -29,7 +39,11 @@ const Index = () => {
   };
 
   const handleArrange = () => {
-    const arranged = arrangeShapes(shapes, spacing);
+    if (!slab) {
+      toast.error("Please add a slab first");
+      return;
+    }
+    const arranged = arrangeShapes(shapes, spacing, slab);
     setArrangedShapes(arranged);
     toast.success(`Arranged ${shapes.length} shapes with ${spacing}cm spacing`);
   };
@@ -102,13 +116,22 @@ const Index = () => {
                 <CardTitle>Canvas Preview</CardTitle>
               </CardHeader>
               <CardContent>
-                <ShapeCanvas 
-                  shapes={arrangedShapes.length > 0 ? arrangedShapes : shapes} 
-                  spacing={spacing}
-                />
-                <p className="text-sm text-muted-foreground mt-4">
-                  Grid: 1cm = 10px | Canvas: 80cm × 60cm
-                </p>
+                {slab ? (
+                  <>
+                    <ShapeCanvas 
+                      slab={slab}
+                      shapes={arrangedShapes.length > 0 ? arrangedShapes : shapes} 
+                      spacing={spacing}
+                    />
+                    <p className="text-sm text-muted-foreground mt-4">
+                      Slab: {slab.type === "slab" ? `${slab.width}cm × ${slab.height}cm` : ""} | Grid: 1cm = 10px
+                    </p>
+                  </>
+                ) : (
+                  <div className="border rounded-lg p-12 text-center text-muted-foreground">
+                    Please add a slab first to start designing
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
