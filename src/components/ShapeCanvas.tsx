@@ -55,13 +55,27 @@ export const ShapeCanvas = ({
     ctx.lineWidth = 3;
     ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
-    // Draw shapes
-    ctx.fillStyle = "hsl(var(--primary))";
-    ctx.strokeStyle = "hsl(var(--primary))";
+    // Draw shapes with different colors
     ctx.lineWidth = 2;
+    
+    const shapeColors: Record<string, { fill: string; stroke: string }> = {
+      rectangle: { fill: "rgba(59, 130, 246, 0.3)", stroke: "rgb(59, 130, 246)" },
+      "l-shape-tl": { fill: "rgba(139, 92, 246, 0.3)", stroke: "rgb(139, 92, 246)" },
+      "l-shape-tr": { fill: "rgba(139, 92, 246, 0.3)", stroke: "rgb(139, 92, 246)" },
+      "l-shape-bl": { fill: "rgba(139, 92, 246, 0.3)", stroke: "rgb(139, 92, 246)" },
+      "l-shape-br": { fill: "rgba(139, 92, 246, 0.3)", stroke: "rgb(139, 92, 246)" },
+      triangle: { fill: "rgba(34, 197, 94, 0.3)", stroke: "rgb(34, 197, 94)" },
+      circle: { fill: "rgba(249, 115, 22, 0.3)", stroke: "rgb(249, 115, 22)" },
+    };
+    
     shapes.forEach(shape => {
       const x = shape.x * scale;
       const y = shape.y * scale;
+      const colors = shapeColors[shape.type] || { fill: "rgba(100, 100, 100, 0.3)", stroke: "rgb(100, 100, 100)" };
+      
+      ctx.fillStyle = colors.fill;
+      ctx.strokeStyle = colors.stroke;
+      
       ctx.beginPath();
       switch (shape.type) {
         case "rectangle":
@@ -120,6 +134,48 @@ export const ShapeCanvas = ({
       }
       ctx.fill();
       ctx.stroke();
+      
+      // Add measurements text
+      ctx.fillStyle = "rgb(0, 0, 0)";
+      ctx.strokeStyle = "rgb(255, 255, 255)";
+      ctx.lineWidth = 3;
+      ctx.font = "bold 12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      
+      let measurementText = "";
+      let centerX = x;
+      let centerY = y;
+      
+      switch (shape.type) {
+        case "rectangle":
+          measurementText = `${shape.width}×${shape.height}cm`;
+          centerX = x + (shape.width * scale) / 2;
+          centerY = y + (shape.height * scale) / 2;
+          break;
+        case "l-shape-tl":
+        case "l-shape-tr":
+        case "l-shape-bl":
+        case "l-shape-br":
+          measurementText = `${shape.width}×${shape.height}cm`;
+          centerX = x + (shape.width * scale) / 2;
+          centerY = y + (shape.height * scale) / 2;
+          break;
+        case "triangle":
+          measurementText = `B:${shape.base} H:${shape.height}cm`;
+          centerX = x + (shape.base * scale) / 2;
+          centerY = y + (shape.height * scale) / 2;
+          break;
+        case "circle":
+          measurementText = `R:${shape.radius}cm`;
+          centerX = x + shape.radius * scale;
+          centerY = y + shape.radius * scale;
+          break;
+      }
+      
+      // Draw text with white outline
+      ctx.strokeText(measurementText, centerX, centerY);
+      ctx.fillText(measurementText, centerX, centerY);
     });
   }, [slab, shapes, spacing]);
   return <div className="border rounded-lg overflow-hidden shadow-sm" style={{
