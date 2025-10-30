@@ -1,18 +1,17 @@
 import { useRef, useEffect } from "react";
 import { Shape } from "@/types/shapes";
-
 interface ShapeCanvasProps {
   shapes: Shape[];
   spacing: number;
 }
-
-export const ShapeCanvas = ({ shapes, spacing }: ShapeCanvasProps) => {
+export const ShapeCanvas = ({
+  shapes,
+  spacing
+}: ShapeCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -23,14 +22,13 @@ export const ShapeCanvas = ({ shapes, spacing }: ShapeCanvasProps) => {
     ctx.strokeStyle = "hsl(var(--grid))";
     ctx.lineWidth = 0.5;
     const gridSize = 10; // 1cm = 10px
-    
+
     for (let x = 0; x <= canvas.width; x += gridSize) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, canvas.height);
       ctx.stroke();
     }
-    
     for (let y = 0; y <= canvas.height; y += gridSize) {
       ctx.beginPath();
       ctx.moveTo(0, y);
@@ -42,19 +40,15 @@ export const ShapeCanvas = ({ shapes, spacing }: ShapeCanvasProps) => {
     ctx.fillStyle = "hsl(var(--primary))";
     ctx.strokeStyle = "hsl(var(--primary))";
     ctx.lineWidth = 2;
-
-    shapes.forEach((shape) => {
+    shapes.forEach(shape => {
       const scale = 10; // 1cm = 10px
       const x = shape.x * scale;
       const y = shape.y * scale;
-
       ctx.beginPath();
-
       switch (shape.type) {
         case "rectangle":
           ctx.rect(x, y, shape.width * scale, shape.height * scale);
           break;
-
         case "l-shape-tl":
         case "l-shape-tr":
         case "l-shape-bl":
@@ -64,9 +58,7 @@ export const ShapeCanvas = ({ shapes, spacing }: ShapeCanvasProps) => {
           const h = shape.height * scale;
           const lw = shape.legWidth * scale;
           const lh = shape.legHeight * scale;
-
           ctx.moveTo(x, y);
-          
           if (shape.type === "l-shape-tl") {
             ctx.lineTo(x + w, y);
             ctx.lineTo(x + w, y + lh);
@@ -95,32 +87,23 @@ export const ShapeCanvas = ({ shapes, spacing }: ShapeCanvasProps) => {
           }
           ctx.closePath();
           break;
-
         case "triangle":
-          ctx.moveTo(x + (shape.base * scale) / 2, y);
+          ctx.moveTo(x + shape.base * scale / 2, y);
           ctx.lineTo(x + shape.base * scale, y + shape.height * scale);
           ctx.lineTo(x, y + shape.height * scale);
           ctx.closePath();
           break;
-
         case "circle":
           ctx.arc(x + shape.radius * scale, y + shape.radius * scale, shape.radius * scale, 0, Math.PI * 2);
           break;
       }
-
       ctx.fill();
       ctx.stroke();
     });
   }, [shapes, spacing]);
-
-  return (
-    <div className="border rounded-lg overflow-hidden shadow-sm" style={{ backgroundColor: "hsl(var(--canvas-bg))" }}>
-      <canvas
-        ref={canvasRef}
-        width={800}
-        height={600}
-        className="w-full"
-      />
-    </div>
-  );
+  return <div className="border rounded-lg overflow-hidden shadow-sm" style={{
+    backgroundColor: "hsl(var(--canvas-bg))"
+  }}>
+      <canvas ref={canvasRef} width={800} height={600} className="w-full bg-white/[0.14]" />
+    </div>;
 };
