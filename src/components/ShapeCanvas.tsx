@@ -96,6 +96,9 @@ export const ShapeCanvas = ({
         case "circle":
           ctx.arc(x + shape.radius * scale, y + shape.radius * scale, shape.radius * scale, 0, Math.PI * 2);
           break;
+        case "slab":
+          ctx.rect(x, y, shape.width * scale, shape.height * scale);
+          break;
       }
       ctx.fill();
       ctx.stroke();

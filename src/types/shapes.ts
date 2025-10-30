@@ -5,7 +5,8 @@ export type ShapeType =
   | "l-shape-bl" 
   | "l-shape-br" 
   | "triangle" 
-  | "circle";
+  | "circle"
+  | "slab";
 
 export interface BaseShape {
   id: string;
@@ -39,4 +40,10 @@ export interface Circle extends BaseShape {
   radius: number;
 }
 
-export type Shape = Rectangle | LShape | Triangle | Circle;
+export interface Slab extends BaseShape {
+  type: "slab";
+  width: number;
+  height: number;
+}
+
+export type Shape = Rectangle | LShape | Triangle | Circle | Slab;

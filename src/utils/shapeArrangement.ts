@@ -13,6 +13,8 @@ const getShapeBounds = (shape: Shape): { width: number; height: number } => {
       return { width: shape.base, height: shape.height };
     case "circle":
       return { width: shape.radius * 2, height: shape.radius * 2 };
+    case "slab":
+      return { width: shape.width, height: shape.height };
   }
 };
 

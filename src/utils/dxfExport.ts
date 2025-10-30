@@ -92,6 +92,16 @@ export const exportToDXF = (shapes: Shape[], spacing: number): string => {
         dxf += `10\n${x + shape.radius * 10}\n20\n${y + shape.radius * 10}\n`;
         dxf += `40\n${shape.radius * 10}\n`;
         break;
+        
+      case "slab":
+        // Slab as POLYLINE
+        dxf += "0\nLWPOLYLINE\n8\nMarbleShapes\n90\n5\n70\n1\n";
+        dxf += `10\n${x}\n20\n${y}\n`;
+        dxf += `10\n${x + shape.width * 10}\n20\n${y}\n`;
+        dxf += `10\n${x + shape.width * 10}\n20\n${y + shape.height * 10}\n`;
+        dxf += `10\n${x}\n20\n${y + shape.height * 10}\n`;
+        dxf += `10\n${x}\n20\n${y}\n`;
+        break;
     }
   });
   

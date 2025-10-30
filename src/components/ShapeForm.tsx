@@ -78,6 +78,16 @@ export const ShapeForm = ({ onAddShape }: ShapeFormProps) => {
           };
         }
         break;
+      case "slab":
+        if (dimensions.width && dimensions.height) {
+          newShape = {
+            ...baseShape,
+            type: "slab",
+            width: parseFloat(dimensions.width),
+            height: parseFloat(dimensions.height),
+          };
+        }
+        break;
     }
 
     if (newShape) {
@@ -215,6 +225,33 @@ export const ShapeForm = ({ onAddShape }: ShapeFormProps) => {
             />
           </div>
         );
+      case "slab":
+        return (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="width">Width (cm)</Label>
+              <Input
+                id="width"
+                type="number"
+                step="0.1"
+                value={dimensions.width}
+                onChange={(e) => setDimensions({ ...dimensions, width: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="height">Height (cm)</Label>
+              <Input
+                id="height"
+                type="number"
+                step="0.1"
+                value={dimensions.height}
+                onChange={(e) => setDimensions({ ...dimensions, height: e.target.value })}
+                required
+              />
+            </div>
+          </>
+        );
     }
   };
 
@@ -239,6 +276,7 @@ export const ShapeForm = ({ onAddShape }: ShapeFormProps) => {
                 <SelectItem value="l-shape-br">L-Shape (Bottom-Right)</SelectItem>
                 <SelectItem value="triangle">Triangle</SelectItem>
                 <SelectItem value="circle">Circle</SelectItem>
+                <SelectItem value="slab">Slab</SelectItem>
               </SelectContent>
             </Select>
           </div>
