@@ -1,6 +1,6 @@
 import { Shape } from "@/types/shapes";
 
-export const exportToDXF = (shapes: Shape[], spacing: number): string => {
+export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): string => {
   let dxf = "";
   
   // DXF Header
@@ -17,6 +17,18 @@ export const exportToDXF = (shapes: Shape[], spacing: number): string => {
   
   // Entities Section
   dxf += "0\nSECTION\n2\nENTITIES\n";
+  
+  // Export slab first if it exists
+  if (slab && slab.type === "slab") {
+    const slabX = 0;
+    const slabY = 0;
+    dxf += "0\nLWPOLYLINE\n8\nMarbleShapes\n90\n5\n70\n1\n";
+    dxf += `10\n${slabX}\n20\n${slabY}\n`;
+    dxf += `10\n${slabX + slab.width * 10}\n20\n${slabY}\n`;
+    dxf += `10\n${slabX + slab.width * 10}\n20\n${slabY + slab.height * 10}\n`;
+    dxf += `10\n${slabX}\n20\n${slabY + slab.height * 10}\n`;
+    dxf += `10\n${slabX}\n20\n${slabY}\n`;
+  }
   
   shapes.forEach((shape) => {
     const x = shape.x * 10; // Convert cm to mm
@@ -111,8 +123,8 @@ export const exportToDXF = (shapes: Shape[], spacing: number): string => {
   return dxf;
 };
 
-export const downloadDXF = (shapes: Shape[], spacing: number) => {
-  const dxfContent = exportToDXF(shapes, spacing);
+export const downloadDXF = (shapes: Shape[], spacing: number, slab?: Shape) => {
+  const dxfContent = exportToDXF(shapes, spacing, slab);
   const blob = new Blob([dxfContent], { type: "application/dxf" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

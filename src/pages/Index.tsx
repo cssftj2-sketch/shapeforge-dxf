@@ -53,7 +53,7 @@ const Index = () => {
       toast.error("Please arrange shapes before exporting");
       return;
     }
-    downloadDXF(arrangedShapes, spacing);
+    downloadDXF(arrangedShapes, spacing, slab || undefined);
     toast.success("DXF file downloaded successfully");
   };
 
