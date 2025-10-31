@@ -1,14 +1,15 @@
 import { Shape } from "@/types/shapes";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit } from "lucide-react";
 
 interface ShapeListProps {
   shapes: Shape[];
   onRemoveShape: (id: string) => void;
+  onEditShape: (shape: Shape) => void;
 }
 
-export const ShapeList = ({ shapes, onRemoveShape }: ShapeListProps) => {
+export const ShapeList = ({ shapes, onRemoveShape, onEditShape }: ShapeListProps) => {
   const getShapeDescription = (shape: Shape): string => {
     switch (shape.type) {
       case "rectangle":
@@ -44,14 +45,24 @@ export const ShapeList = ({ shapes, onRemoveShape }: ShapeListProps) => {
                 className="flex items-center justify-between p-3 bg-secondary rounded-lg"
               >
                 <span className="text-sm font-medium">{getShapeDescription(shape)}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onRemoveShape(shape.id)}
-                  className="h-8 w-8"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEditShape(shape)}
+                    className="h-8 w-8"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onRemoveShape(shape.id)}
+                    className="h-8 w-8"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

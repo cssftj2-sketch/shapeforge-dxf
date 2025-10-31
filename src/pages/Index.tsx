@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Shape } from "@/types/shapes";
 import { ShapeForm } from "@/components/ShapeForm";
 import { ShapeCanvas } from "@/components/ShapeCanvas";
@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { arrangeShapes } from "@/utils/shapeArrangement";
 import { downloadDXF } from "@/utils/dxfExport";
-import { Download, Layout } from "lucide-react";
+import { handleDXFUpload } from "@/utils/dxfImport";
+import { Download, Layout, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 const Index = () => {
@@ -19,19 +20,42 @@ const Index = () => {
   const [arrangedShapes, setArrangedShapes] = useState<Shape[]>([]);
   const [spacing, setSpacing] = useState(1); // 1cm default spacing
   const [includeSlab, setIncludeSlab] = useState(true);
+  const [editingShape, setEditingShape] = useState<Shape | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddShape = (shape: Shape) => {
     if (shape.type === "slab") {
       setSlab(shape);
       toast.success("Slab added successfully");
+      setEditingShape(null);
     } else {
       if (!slab) {
         toast.error("Please add a slab first");
         return;
       }
-      setShapes([...shapes, shape]);
-      toast.success("Shape added successfully");
+      
+      if (editingShape) {
+        // Update existing shape
+        setShapes(shapes.map(s => s.id === editingShape.id ? shape : s));
+        setArrangedShapes(arrangedShapes.map(s => s.id === editingShape.id ? shape : s));
+        toast.success("Shape updated successfully");
+        setEditingShape(null);
+      } else {
+        // Add new shape
+        setShapes([...shapes, shape]);
+        toast.success("Shape added successfully");
+      }
     }
+  };
+
+  const handleEditShape = (shape: Shape) => {
+    setEditingShape(shape);
+    toast.info("Edit the shape and add it again");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingShape(null);
+    toast.info("Edit cancelled");
   };
 
   const handleRemoveShape = (id: string) => {
@@ -48,6 +72,35 @@ const Index = () => {
     const arranged = arrangeShapes(shapes, spacing, slab);
     setArrangedShapes(arranged);
     toast.success(`Arranged ${shapes.length} shapes with ${spacing}cm spacing`);
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const result = await handleDXFUpload(file);
+      
+      if (result.slab) {
+        setSlab(result.slab);
+      }
+      
+      if (result.shapes.length > 0) {
+        setShapes(result.shapes);
+        setArrangedShapes([]);
+        toast.success(`Imported ${result.shapes.length} shapes${result.slab ? " and slab" : ""}`);
+      } else {
+        toast.warning("No shapes found in DXF file");
+      }
+    } catch (error) {
+      console.error("Import error:", error);
+      toast.error("Failed to import DXF file. Please check the file format.");
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleExport = () => {
@@ -71,7 +124,11 @@ const Index = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="space-y-6">
-            <ShapeForm onAddShape={handleAddShape} />
+            <ShapeForm 
+              onAddShape={handleAddShape} 
+              editingShape={editingShape}
+              onCancelEdit={handleCancelEdit}
+            />
             
             <Card>
               <CardHeader>
@@ -97,7 +154,7 @@ const Index = () => {
                     onCheckedChange={setIncludeSlab}
                   />
                 </div>
-                <Button
+                <Button 
                   onClick={handleArrange} 
                   className="w-full"
                   disabled={shapes.length === 0}
@@ -105,19 +162,40 @@ const Index = () => {
                   <Layout className="mr-2 h-4 w-4" />
                   Arrange Shapes
                 </Button>
-                <Button 
-                  onClick={handleExport} 
-                  variant="secondary"
-                  className="w-full"
-                  disabled={arrangedShapes.length === 0}
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Export to DXF
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    onClick={() => fileInputRef.current?.click()}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Import DXF
+                  </Button>
+                  <Button 
+                    onClick={handleExport} 
+                    variant="secondary"
+                    className="w-full"
+                    disabled={arrangedShapes.length === 0}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Export DXF
+                  </Button>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".dxf"
+                  onChange={handleImport}
+                  className="hidden"
+                />
               </CardContent>
             </Card>
 
-            <ShapeList shapes={shapes} onRemoveShape={handleRemoveShape} />
+            <ShapeList 
+              shapes={shapes} 
+              onRemoveShape={handleRemoveShape}
+              onEditShape={handleEditShape}
+            />
           </div>
 
           <div className="lg:col-span-2">

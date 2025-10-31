@@ -1,17 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShapeType, Shape } from "@/types/shapes";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 
 interface ShapeFormProps {
   onAddShape: (shape: Shape) => void;
+  editingShape?: Shape | null;
+  onCancelEdit?: () => void;
 }
 
-export const ShapeForm = ({ onAddShape }: ShapeFormProps) => {
+export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormProps) => {
   const [shapeType, setShapeType] = useState<ShapeType>("rectangle");
   const [dimensions, setDimensions] = useState({
     width: "",
@@ -22,13 +24,37 @@ export const ShapeForm = ({ onAddShape }: ShapeFormProps) => {
     radius: "",
   });
 
+  useEffect(() => {
+    if (editingShape) {
+      setShapeType(editingShape.type);
+      
+      const newDimensions: any = {
+        width: "",
+        height: "",
+        legWidth: "",
+        legHeight: "",
+        base: "",
+        radius: "",
+      };
+      
+      if ("width" in editingShape) newDimensions.width = editingShape.width.toString();
+      if ("height" in editingShape) newDimensions.height = editingShape.height.toString();
+      if ("radius" in editingShape) newDimensions.radius = editingShape.radius.toString();
+      if ("base" in editingShape) newDimensions.base = editingShape.base.toString();
+      if ("legWidth" in editingShape) newDimensions.legWidth = editingShape.legWidth.toString();
+      if ("legHeight" in editingShape) newDimensions.legHeight = editingShape.legHeight.toString();
+      
+      setDimensions(newDimensions);
+    }
+  }, [editingShape]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const baseShape = {
-      id: crypto.randomUUID(),
-      x: 0,
-      y: 0,
+      id: editingShape?.id || crypto.randomUUID(),
+      x: editingShape?.x || 0,
+      y: editingShape?.y || 0,
     };
 
     let newShape: Shape | null = null;
@@ -92,14 +118,18 @@ export const ShapeForm = ({ onAddShape }: ShapeFormProps) => {
 
     if (newShape) {
       onAddShape(newShape);
-      setDimensions({
-        width: "",
-        height: "",
-        legWidth: "",
-        legHeight: "",
-        base: "",
-        radius: "",
-      });
+      
+      // Reset form only if not editing
+      if (!editingShape) {
+        setDimensions({
+          width: "",
+          height: "",
+          legWidth: "",
+          legHeight: "",
+          base: "",
+          radius: "",
+        });
+      }
     }
   };
 
@@ -258,7 +288,19 @@ export const ShapeForm = ({ onAddShape }: ShapeFormProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Add Marble Shape</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>{editingShape ? "Edit Shape" : "Add Marble Shape"}</CardTitle>
+          {editingShape && onCancelEdit && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onCancelEdit}
+              type="button"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -285,7 +327,7 @@ export const ShapeForm = ({ onAddShape }: ShapeFormProps) => {
 
           <Button type="submit" className="w-full">
             <Plus className="mr-2 h-4 w-4" />
-            Add Shape
+            {editingShape ? "Update Shape" : "Add Shape"}
           </Button>
         </form>
       </CardContent>
