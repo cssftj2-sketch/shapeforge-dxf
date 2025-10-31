@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { arrangeShapes } from "@/utils/shapeArrangement";
 import { downloadDXF } from "@/utils/dxfExport";
 import { Download, Layout } from "lucide-react";
@@ -17,6 +18,7 @@ const Index = () => {
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [arrangedShapes, setArrangedShapes] = useState<Shape[]>([]);
   const [spacing, setSpacing] = useState(1); // 1cm default spacing
+  const [includeSlab, setIncludeSlab] = useState(true);
 
   const handleAddShape = (shape: Shape) => {
     if (shape.type === "slab") {
@@ -53,7 +55,7 @@ const Index = () => {
       toast.error("Please arrange shapes before exporting");
       return;
     }
-    downloadDXF(arrangedShapes, spacing, slab || undefined);
+    downloadDXF(arrangedShapes, spacing, includeSlab ? (slab || undefined) : undefined);
     toast.success("DXF file downloaded successfully");
   };
 
@@ -87,7 +89,15 @@ const Index = () => {
                     onChange={(e) => setSpacing(parseFloat(e.target.value) || 1)}
                   />
                 </div>
-                <Button 
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="include-slab">Include Slab in Export</Label>
+                  <Switch
+                    id="include-slab"
+                    checked={includeSlab}
+                    onCheckedChange={setIncludeSlab}
+                  />
+                </div>
+                <Button
                   onClick={handleArrange} 
                   className="w-full"
                   disabled={shapes.length === 0}
