@@ -70,6 +70,12 @@ const Index = () => {
     toast.success("Shape removed");
   };
 
+  const handleUpdateShapes = (updatedShapes: Shape[]) => {
+    setShapes(updatedShapes);
+    setArrangedShapes([]); // Clear arrangement when shapes are manually moved
+    setEfficiency(null);
+  };
+
   const handleArrange = () => {
     if (!slab) {
       toast.error("Please add a slab first");
@@ -318,8 +324,8 @@ const Index = () => {
                   <>
                     <ShapeCanvas 
                       slab={slab}
-                      shapes={arrangedShapes.length > 0 ? arrangedShapes : shapes} 
-                      spacing={spacing}
+                      shapes={arrangedShapes.length > 0 ? arrangedShapes : shapes}
+                      onUpdateShapes={handleUpdateShapes}
                     />
                     <p className="text-sm text-muted-foreground mt-4">
                       Slab: {slab.type === "slab" ? `${slab.width}cm × ${slab.height}cm` : ""} | Grid: 1cm = 10px
