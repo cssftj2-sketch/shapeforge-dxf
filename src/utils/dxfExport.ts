@@ -3,9 +3,11 @@ import { Shape } from "@/types/shapes";
 export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): string => {
   let dxf = "";
   
-  // DXF Header
+  // DXF Header - DeepNest compatible
   dxf += "0\nSECTION\n2\nHEADER\n";
   dxf += "9\n$ACADVER\n1\nAC1015\n"; // AutoCAD 2000
+  dxf += "9\n$INSUNITS\n70\n4\n"; // Units: 4 = millimeters
+  dxf += "9\n$MEASUREMENT\n70\n1\n"; // Metric
   dxf += "0\nENDSEC\n";
   
   // Tables Section
