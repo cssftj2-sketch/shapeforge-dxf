@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { arrangeShapes } from "@/utils/shapeArrangement";
 import { downloadDXF } from "@/utils/dxfExport";
+import { downloadSVG } from "@/utils/svgExport";
 import { handleDXFUpload } from "@/utils/dxfImport";
 import { Download, Layout, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -112,6 +113,15 @@ const Index = () => {
     toast.success("DXF file downloaded successfully");
   };
 
+  const handleExportSVG = () => {
+    if (arrangedShapes.length === 0) {
+      toast.error("Please arrange shapes before exporting");
+      return;
+    }
+    downloadSVG(arrangedShapes, spacing, includeSlab ? (slab || undefined) : undefined);
+    toast.success("SVG file downloaded successfully");
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -162,7 +172,7 @@ const Index = () => {
                   <Layout className="mr-2 h-4 w-4" />
                   Arrange Shapes
                 </Button>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
                   <Button 
                     onClick={() => fileInputRef.current?.click()}
                     variant="outline"
@@ -171,15 +181,26 @@ const Index = () => {
                     <Upload className="mr-2 h-4 w-4" />
                     Import DXF
                   </Button>
-                  <Button 
-                    onClick={handleExport} 
-                    variant="secondary"
-                    className="w-full"
-                    disabled={arrangedShapes.length === 0}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Export DXF
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      onClick={handleExport} 
+                      variant="secondary"
+                      className="w-full"
+                      disabled={arrangedShapes.length === 0}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Export DXF
+                    </Button>
+                    <Button 
+                      onClick={handleExportSVG} 
+                      variant="secondary"
+                      className="w-full"
+                      disabled={arrangedShapes.length === 0}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Export SVG
+                    </Button>
+                  </div>
                 </div>
                 <input
                   ref={fileInputRef}
