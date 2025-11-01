@@ -9,12 +9,17 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { arrangeShapes } from "@/utils/shapeArrangement";
 import { optimizeNesting } from "@/utils/optimizedNesting";
 import { downloadDXF } from "@/utils/dxfExport";
 import { downloadSVG } from "@/utils/svgExport";
 import { handleDXFUpload } from "@/utils/dxfImport";
-import { Download, Layout, Upload, Sparkles, Scissors, Layers } from "lucide-react";
+import { 
+  Download, Layout, Upload, Sparkles, Scissors, Layers, 
+  Plus, AlertCircle, CheckCircle2, TrendingUp, FileText,
+  Maximize2, HelpCircle, Zap, BarChart3
+} from "lucide-react";
 import { toast } from "sonner";
 
 const Index = () => {
@@ -29,32 +34,51 @@ const Index = () => {
   const [efficiency, setEfficiency] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Calculate waste metrics
+  const wastePercentage = efficiency !== null ? (100 - efficiency) : null;
+  const slabArea = slab?.type === "slab" ? slab.width * slab.height : 0;
+  const usedArea = efficiency !== null ? (slabArea * efficiency) / 100 : 0;
+  const wasteArea = slabArea - usedArea;
+
   const handleAddShape = (shape: Shape) => {
     if (shape.type === "slab") {
       setSlab(shape);
-      toast.success("Slab added successfully");
+      toast.success("Slab added successfully", {
+        description: `${shape.width}cm × ${shape.height}cm workspace ready`,
+        icon: <CheckCircle2 className="h-5 w-5 text-success" />
+      });
       setEditingShape(null);
     } else {
       if (!slab) {
-        toast.error("Please add a slab first");
+        toast.error("Slab Required", {
+          description: "Please add a slab first to define your workspace",
+          icon: <AlertCircle className="h-5 w-5" />
+        });
         return;
       }
       
       if (editingShape) {
         setShapes(shapes.map(s => s.id === editingShape.id ? shape : s));
         setArrangedShapes(arrangedShapes.map(s => s.id === editingShape.id ? shape : s));
-        toast.success("Shape updated successfully");
+        toast.success("Shape updated", {
+          icon: <CheckCircle2 className="h-5 w-5 text-success" />
+        });
         setEditingShape(null);
       } else {
         setShapes([...shapes, shape]);
-        toast.success("Shape added successfully");
+        toast.success("Shape added", {
+          description: `${shapes.length + 1} shapes total`,
+          icon: <Plus className="h-5 w-5 text-success" />
+        });
       }
     }
   };
 
   const handleEditShape = (shape: Shape) => {
     setEditingShape(shape);
-    toast.info("Edit the shape and add it again");
+    toast.info("Edit mode active", {
+      description: "Update the shape parameters and save",
+    });
   };
 
   const handleCancelEdit = () => {
@@ -76,23 +100,26 @@ const Index = () => {
 
   const handleArrange = () => {
     if (!slab) {
-      toast.error("Please add a slab first");
+      toast.error("No slab defined");
       return;
     }
     const arranged = arrangeShapes(shapes, spacing, slab);
     setArrangedShapes(arranged);
     setEfficiency(null);
-    toast.success(`Arranged ${shapes.length} shapes with ${spacing}cm spacing`);
+    toast.success("Quick arrangement complete", {
+      description: `${arranged.length}/${shapes.length} shapes placed`,
+      icon: <Layout className="h-5 w-5 text-success" />
+    });
   };
 
   const handleOptimize = async () => {
     if (!slab) {
-      toast.error("Please add a slab first");
+      toast.error("No slab defined");
       return;
     }
     
     if (shapes.length === 0) {
-      toast.error("Please add shapes to optimize");
+      toast.error("No shapes to optimize");
       return;
     }
 
@@ -117,20 +144,23 @@ const Index = () => {
       setArrangedShapes(result.shapes);
       setEfficiency(result.efficiency);
       
-      toast.success(
-        `Optimization complete! Placed ${result.shapes.length}/${shapes.length} shapes with ${result.efficiency.toFixed(1)}% efficiency`,
-        { duration: 5000 }
-      );
+      toast.success("Optimization Complete!", {
+        description: `${result.efficiency.toFixed(1)}% efficiency • ${result.shapes.length}/${shapes.length} shapes placed`,
+        icon: <TrendingUp className="h-5 w-5 text-success" />,
+        duration: 5000
+      });
       
       if (result.shapes.length < shapes.length) {
-        toast.warning(
-          `${shapes.length - result.shapes.length} shapes didn't fit. Consider a larger slab or fewer shapes.`,
-          { duration: 7000 }
-        );
+        toast.warning("Some shapes didn't fit", {
+          description: `${shapes.length - result.shapes.length} shapes couldn't be placed. Consider a larger slab.`,
+          duration: 7000
+        });
       }
     } catch (error) {
       console.error("Optimization error:", error);
-      toast.error("Optimization failed. Please try again.");
+      toast.error("Optimization failed", {
+        description: "Please try again or adjust your parameters"
+      });
     } finally {
       setIsOptimizing(false);
       setOptimizationProgress(0);
@@ -151,13 +181,18 @@ const Index = () => {
       if (result.shapes.length > 0) {
         setShapes(result.shapes);
         setArrangedShapes([]);
-        toast.success(`Imported ${result.shapes.length} shapes${result.slab ? " and slab" : ""}`);
+        toast.success("Import successful", {
+          description: `${result.shapes.length} shapes${result.slab ? " and slab" : ""} imported`,
+          icon: <CheckCircle2 className="h-5 w-5 text-success" />
+        });
       } else {
         toast.warning("No shapes found in DXF file");
       }
     } catch (error) {
       console.error("Import error:", error);
-      toast.error("Failed to import DXF file. Please check the file format.");
+      toast.error("Import failed", {
+        description: "Please check the file format and try again"
+      });
     }
     
     if (fileInputRef.current) {
@@ -167,233 +202,388 @@ const Index = () => {
 
   const handleExport = () => {
     if (arrangedShapes.length === 0) {
-      toast.error("Please arrange shapes before exporting");
+      toast.error("Nothing to export", {
+        description: "Arrange shapes first before exporting"
+      });
       return;
     }
     downloadDXF(arrangedShapes, spacing, includeSlab ? (slab || undefined) : undefined);
-    toast.success("DXF file downloaded successfully");
+    toast.success("DXF exported", {
+      description: "File downloaded successfully",
+      icon: <Download className="h-5 w-5 text-success" />
+    });
   };
 
   const handleExportSVG = () => {
     if (arrangedShapes.length === 0) {
-      toast.error("Please arrange shapes before exporting");
+      toast.error("Nothing to export", {
+        description: "Arrange shapes first before exporting"
+      });
       return;
     }
     downloadSVG(arrangedShapes, spacing, includeSlab ? (slab || undefined) : undefined);
-    toast.success("SVG file downloaded successfully");
+    toast.success("SVG exported", {
+      description: "File downloaded successfully",
+      icon: <Download className="h-5 w-5 text-success" />
+    });
   };
 
-  return (
-    <div className="min-h-screen bg-background p-6 md:p-8">
-      <div className="max-w-[1800px] mx-auto space-y-8">
-        {/* Premium Header */}
-        <header className="space-y-3 pb-6 border-b border-white/10">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl glass-panel gold-glow">
-              <Scissors className="h-8 w-8 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-amber-300 to-primary bg-clip-text text-transparent shimmer">
-                Marble Cut Nesting
-              </h1>
-              <p className="text-muted-foreground mt-1 text-lg">
-                Professional marble shape optimization for precision cutting
-              </p>
-            </div>
-          </div>
-        </header>
+  // Progressive disclosure: Show relevant UI based on state
+  const hasShapes = shapes.length > 0;
+  const hasSlab = slab !== null;
+  const hasArrangement = arrangedShapes.length > 0;
 
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-          {/* Left Sidebar - Tools & Controls */}
-          <div className="xl:col-span-3 space-y-6">
-            {/* Shape Form */}
-            <div className="premium-card">
-              <ShapeForm 
-                onAddShape={handleAddShape} 
-                editingShape={editingShape}
-                onCancelEdit={handleCancelEdit}
-              />
-            </div>
-            
-            {/* Arrangement Settings */}
-            <Card className="premium-card border-primary/20">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-2">
-                  <Layers className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-xl">Arrangement</CardTitle>
+  return (
+    <TooltipProvider>
+      <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+        <div className="max-w-[2000px] mx-auto space-y-6">
+          {/* Hero Header with Clear Hierarchy */}
+          <header className="space-y-4 pb-6 border-b border-white/10">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-4 rounded-2xl glass-elevated animate-pulse-glow">
+                  <Scissors className="h-10 w-10 text-primary" />
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="space-y-3">
-                  <Label htmlFor="spacing" className="text-sm font-semibold text-foreground/90">
-                    Spacing (cm)
-                  </Label>
-                  <Input
-                    id="spacing"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={spacing}
-                    onChange={(e) => setSpacing(parseFloat(e.target.value) || 1)}
-                    className="glass-card border-primary/20 focus:border-primary/50"
-                  />
+                <div>
+                  <h1 className="text-hero bg-gradient-to-r from-primary via-blue-400 to-primary bg-clip-text text-transparent">
+                    Marble Cut Nesting
+                  </h1>
+                  <p className="text-body text-muted-foreground mt-2">
+                    Professional optimization for precision marble cutting • Save material, reduce waste
+                  </p>
                 </div>
-                
-                <div className="flex items-center justify-between p-4 rounded-lg glass-panel">
-                  <Label htmlFor="include-slab" className="font-medium">
-                    Include Slab in Export
-                  </Label>
-                  <Switch
-                    id="include-slab"
-                    checked={includeSlab}
-                    onCheckedChange={setIncludeSlab}
-                    className="data-[state=checked]:bg-primary"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <Button 
-                    onClick={handleArrange} 
-                    disabled={shapes.length === 0 || isOptimizing}
-                    variant="outline"
-                    className="glass-panel hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
-                  >
-                    <Layout className="mr-2 h-4 w-4" />
-                    Quick
-                  </Button>
-                  <Button 
-                    onClick={handleOptimize} 
-                    disabled={shapes.length === 0 || isOptimizing}
-                    className="btn-gold"
-                  >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Optimize
-                  </Button>
-                </div>
-                
-                {isOptimizing && (
-                  <div className="space-y-3 p-4 rounded-lg glass-panel">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground font-medium">Optimizing...</span>
-                      <span className="font-bold text-primary">{optimizationProgress.toFixed(0)}%</span>
+              </div>
+              
+              {/* Quick Stats */}
+              {hasSlab && (
+                <div className="flex gap-3">
+                  <div className="metric-display min-w-[100px]">
+                    <div className="metric-value text-primary">{shapes.length}</div>
+                    <div className="metric-label">Shapes</div>
+                  </div>
+                  {efficiency !== null && (
+                    <div className="metric-display min-w-[120px]">
+                      <div className={`metric-value ${efficiency > 70 ? 'text-success' : efficiency > 50 ? 'text-warning' : 'text-destructive'}`}>
+                        {efficiency.toFixed(1)}%
+                      </div>
+                      <div className="metric-label">Efficiency</div>
                     </div>
-                    <div className="progress-bar h-2">
-                      <div 
-                        className="progress-fill transition-all duration-300"
-                        style={{ width: `${optimizationProgress}%` }}
+                  )}
+                </div>
+              )}
+            </div>
+          </header>
+
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            {/* Left Sidebar - 30% width, secondary visual weight */}
+            <div className="xl:col-span-3 space-y-6">
+              {/* Shape Form - Always visible but guided */}
+              <Card className="premium-card">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-subsection flex items-center gap-2">
+                      <Plus className="h-5 w-5 text-primary" />
+                      Add Shapes
+                    </CardTitle>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="tooltip max-w-xs">
+                        <p>Start by adding a slab to define your workspace, then add shapes to arrange</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ShapeForm 
+                    onAddShape={handleAddShape} 
+                    editingShape={editingShape}
+                    onCancelEdit={handleCancelEdit}
+                  />
+                </CardContent>
+              </Card>
+              
+              {/* Optimization Panel - Progressive disclosure */}
+              {hasSlab && hasShapes && (
+                <Card className="premium-card-elevated border-primary/30">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-subsection">Optimization</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="spacing" className="text-body font-semibold flex items-center gap-2">
+                          Spacing
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent className="tooltip">
+                              <p>Minimum distance between shapes (cm)</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </Label>
+                        <span className="text-caption">{spacing} cm</span>
+                      </div>
+                      <Input
+                        id="spacing"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="10"
+                        value={spacing}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (val >= 0 && val <= 10) {
+                            setSpacing(val);
+                          } else {
+                            toast.error("Invalid spacing", {
+                              description: "Spacing must be between 0 and 10 cm"
+                            });
+                          }
+                        }}
+                        className="glass-card"
                       />
                     </div>
-                  </div>
-                )}
-                
-                {efficiency !== null && !isOptimizing && (
-                  <div className="efficiency-badge">
-                    <div className="flex-1">
-                      <div className="text-xs text-muted-foreground font-medium">Material Efficiency</div>
-                      <div className="text-2xl font-bold text-primary mt-1">{efficiency.toFixed(1)}%</div>
+                    
+                    {/* Primary CTA - Optimize Button */}
+                    <div className="space-y-3 pt-2">
+                      <Button 
+                        onClick={handleOptimize} 
+                        disabled={isOptimizing}
+                        className="w-full btn-primary h-12 text-base"
+                        size="lg"
+                      >
+                        {isOptimizing ? (
+                          <>
+                            <Sparkles className="mr-2 h-5 w-5 animate-spin" />
+                            Optimizing...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="mr-2 h-5 w-5" />
+                            Optimize Layout
+                          </>
+                        )}
+                      </Button>
+                      
+                      <Button 
+                        onClick={handleArrange} 
+                        disabled={isOptimizing}
+                        variant="outline"
+                        className="w-full glass-panel h-10"
+                      >
+                        <Layout className="mr-2 h-4 w-4" />
+                        Quick Arrange
+                      </Button>
                     </div>
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground">Placed</div>
-                      <div className="text-lg font-semibold">{arrangedShapes.length}/{shapes.length}</div>
+                    
+                    {isOptimizing && (
+                      <div className="space-y-2 p-4 rounded-lg state-info">
+                        <div className="flex justify-between text-sm font-medium">
+                          <span>Finding optimal layout...</span>
+                          <span>{optimizationProgress.toFixed(0)}%</span>
+                        </div>
+                        <div className="progress-bar h-2.5">
+                          <div 
+                            className="progress-fill-primary transition-all duration-300"
+                            style={{ width: `${optimizationProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Results Metrics */}
+                    {efficiency !== null && !isOptimizing && (
+                      <div className="space-y-3 pt-2">
+                        <div className={`p-4 rounded-lg ${efficiency > 70 ? 'state-success' : efficiency > 50 ? 'state-warning' : 'state-error'}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold">Material Efficiency</span>
+                            <BarChart3 className="h-4 w-4" />
+                          </div>
+                          <div className="text-3xl font-bold mb-1">{efficiency.toFixed(1)}%</div>
+                          <div className="text-micro">
+                            {arrangedShapes.length} of {shapes.length} shapes placed
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="metric-display">
+                            <div className="metric-value text-success text-xl">
+                              {usedArea.toFixed(0)}
+                            </div>
+                            <div className="metric-label">Used cm²</div>
+                          </div>
+                          <div className="metric-display">
+                            <div className="metric-value text-destructive text-xl">
+                              {wasteArea.toFixed(0)}
+                            </div>
+                            <div className="metric-label">Waste cm²</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Export Panel - Only when there's something to export */}
+              {hasArrangement && (
+                <Card className="premium-card border-success/30">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-success" />
+                      <CardTitle className="text-subsection">Export</CardTitle>
                     </div>
-                  </div>
-                )}
-                
-                {/* Import/Export Section */}
-                <div className="pt-4 border-t border-white/10 space-y-3">
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg glass-panel">
+                      <Label htmlFor="include-slab" className="text-body font-medium">
+                        Include Slab Border
+                      </Label>
+                      <Switch
+                        id="include-slab"
+                        checked={includeSlab}
+                        onCheckedChange={setIncludeSlab}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Button 
+                        onClick={handleExport} 
+                        className="w-full btn-success h-11"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Export DXF (AlphaCAM)
+                      </Button>
+                      <Button 
+                        onClick={handleExportSVG} 
+                        variant="outline"
+                        className="w-full glass-panel h-10"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Export SVG
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Import Panel */}
+              <Card className="premium-card">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-subsection flex items-center gap-2">
+                    <Upload className="h-5 w-5" />
+                    Import
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                   <Button 
                     onClick={() => fileInputRef.current?.click()}
                     variant="outline"
-                    className="w-full glass-panel hover:border-primary/50 hover:bg-primary/5"
+                    className="w-full glass-panel h-10"
                   >
                     <Upload className="mr-2 h-4 w-4" />
-                    Import DXF
+                    Import DXF File
                   </Button>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button 
-                      onClick={handleExport} 
-                      variant="secondary"
-                      className="glass-panel hover:bg-primary/10"
-                      disabled={arrangedShapes.length === 0}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      DXF
-                    </Button>
-                    <Button 
-                      onClick={handleExportSVG} 
-                      variant="secondary"
-                      className="glass-panel hover:bg-primary/10"
-                      disabled={arrangedShapes.length === 0}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      SVG
-                    </Button>
-                  </div>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".dxf"
-                  onChange={handleImport}
-                  className="hidden"
-                />
-              </CardContent>
-            </Card>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".dxf"
+                    onChange={handleImport}
+                    className="hidden"
+                  />
+                </CardContent>
+              </Card>
 
-            {/* Shape List */}
-            <div className="premium-card">
-              <ShapeList 
-                shapes={shapes} 
-                onRemoveShape={handleRemoveShape}
-                onEditShape={handleEditShape}
-              />
-            </div>
-          </div>
-
-          {/* Center - Canvas Area */}
-          <div className="xl:col-span-9">
-            <Card className="premium-card h-full min-h-[600px]">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-2xl flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-primary gold-glow status-dot" />
-                  Canvas Preview
-                  {slab && (
-                    <span className="text-sm font-normal text-muted-foreground ml-auto">
-                      {slab.type === "slab" ? `${slab.width}cm × ${slab.height}cm` : ""} | Grid: 1cm = 10px
-                    </span>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {slab ? (
-                  <div className="canvas-container">
-                    <ShapeCanvas 
-                      slab={slab}
-                      shapes={arrangedShapes.length > 0 ? arrangedShapes : shapes}
-                      onUpdateShapes={handleUpdateShapes}
+              {/* Shape List */}
+              {hasShapes && (
+                <Card className="premium-card">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-subsection flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Layers className="h-5 w-5" />
+                        Shapes ({shapes.length})
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ShapeList 
+                      shapes={shapes} 
+                      onRemoveShape={handleRemoveShape}
+                      onEditShape={handleEditShape}
                     />
-                  </div>
-                ) : (
-                  <div className="canvas-container flex items-center justify-center min-h-[500px]">
-                    <div className="text-center space-y-4">
-                      <div className="w-20 h-20 rounded-full glass-panel gold-glow mx-auto flex items-center justify-center">
-                        <Layers className="h-10 w-10 text-primary" />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Main Canvas - 70% width, primary visual weight */}
+            <div className="xl:col-span-9">
+              <Card className="premium-card-elevated h-full min-h-[700px]">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-section flex items-center gap-3">
+                      <div className="h-3 w-3 rounded-full bg-primary animate-pulse-glow" />
+                      Workspace Canvas
+                    </CardTitle>
+                    {slab && (
+                      <div className="badge-info">
+                        <Maximize2 className="h-4 w-4" />
+                        <span>{slab.type === "slab" ? `${slab.width}×${slab.height} cm` : ""}</span>
                       </div>
-                      <div>
-                        <h3 className="text-xl font-semibold mb-2">No Slab Defined</h3>
-                        <p className="text-muted-foreground max-w-md">
-                          Add a slab first to start designing your marble cutting layout
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {slab ? (
+                    <div className="canvas-container">
+                      <ShapeCanvas 
+                        slab={slab}
+                        shapes={arrangedShapes.length > 0 ? arrangedShapes : shapes}
+                        onUpdateShapes={handleUpdateShapes}
+                      />
+                    </div>
+                  ) : (
+                    /* Empty State with Guidance */
+                    <div className="empty-state">
+                      <div className="w-24 h-24 rounded-2xl glass-elevated animate-pulse-glow mx-auto flex items-center justify-center mb-6">
+                        <Layers className="h-12 w-12 text-primary" />
+                      </div>
+                      <div className="space-y-4 max-w-md">
+                        <h3 className="text-section">Get Started</h3>
+                        <p className="text-body text-muted-foreground">
+                          Begin by adding a slab to define your marble workspace dimensions. 
+                          Then add the shapes you need to cut and let the optimizer find the best layout.
                         </p>
+                        <div className="flex flex-col gap-2 pt-4">
+                          <div className="flex items-center gap-3 text-caption">
+                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">1</div>
+                            <span>Add a slab (workspace dimensions)</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-caption">
+                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">2</div>
+                            <span>Add shapes to cut</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-caption">
+                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">3</div>
+                            <span>Click "Optimize Layout" for best arrangement</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 
