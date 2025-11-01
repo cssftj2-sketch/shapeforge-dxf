@@ -62,13 +62,17 @@ export const exportToSVG = (shapes: Shape[], spacing: number, slab?: Shape): str
         let points = "";
         
         if (shape.type === "l-shape-tl") {
+          // Top-left: notch in top-left corner
           points = `${x},${y} ${x + w},${y} ${x + w},${y + lh} ${x + lw},${y + lh} ${x + lw},${y + h} ${x},${y + h}`;
         } else if (shape.type === "l-shape-tr") {
+          // Top-right: notch in top-right corner
           points = `${x},${y} ${x + w},${y} ${x + w},${y + h} ${x + w - lw},${y + h} ${x + w - lw},${y + lh} ${x},${y + lh}`;
         } else if (shape.type === "l-shape-bl") {
+          // Bottom-left: notch in bottom-left corner
           points = `${x},${y} ${x + lw},${y} ${x + lw},${y + h - lh} ${x + w},${y + h - lh} ${x + w},${y + h} ${x},${y + h}`;
         } else if (shape.type === "l-shape-br") {
-          points = `${x},${y} ${x + w},${y} ${x + w},${y + h} ${x},${y + h} ${x},${y + h - lh} ${x + w - lw},${y + h - lh} ${x + w - lw},${y}`;
+          // Bottom-right: notch in bottom-right corner
+          points = `${x},${y} ${x + w},${y} ${x + w},${y + h - lh} ${x + w - lw},${y + h - lh} ${x + w - lw},${y + h} ${x},${y + h}`;
         }
         svg += `    <polygon id="lshape-${index}" points="${points}" />\n`;
         break;
