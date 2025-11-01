@@ -20,6 +20,10 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
   // Entities Section
   dxf += "0\nSECTION\n2\nENTITIES\n";
   
+  // Calculate offset to position shapes outside the slab
+  let xOffset = 0;
+  let yOffset = 0;
+  
   // Export slab first if it exists
   if (slab && slab.type === "slab") {
     const slabX = 0;
@@ -30,11 +34,14 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
     dxf += `10\n${slabX + slab.width * 10}\n20\n${slabY + slab.height * 10}\n`;
     dxf += `10\n${slabX}\n20\n${slabY + slab.height * 10}\n`;
     dxf += `10\n${slabX}\n20\n${slabY}\n`;
+    
+    // Position shapes to the right of the slab with spacing
+    xOffset = slab.width * 10 + spacing * 20; // Add extra spacing between slab and shapes
   }
   
   shapes.forEach((shape) => {
-    const x = shape.x * 10; // Convert cm to mm
-    const y = shape.y * 10;
+    const x = shape.x * 10 + xOffset; // Convert cm to mm and add offset
+    const y = shape.y * 10 + yOffset;
     
     switch (shape.type) {
       case "rectangle":
