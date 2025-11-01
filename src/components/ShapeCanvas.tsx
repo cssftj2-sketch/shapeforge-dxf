@@ -1,186 +1,196 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Shape } from "@/types/shapes";
+import { useDrag, useDrop } from 'react-dnd';
+
 interface ShapeCanvasProps {
   slab: Shape;
   shapes: Shape[];
-  spacing: number;
+  onUpdateShapes: (shapes: Shape[]) => void;
 }
+
+const DraggableShape = ({ shape, children }: { shape: Shape, children: React.ReactNode }) => {
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: "shape",
+    item: { id: shape.id },
+    collect: (monitor) => ({
+      isDragging: !!monitor.isDragging(),
+    }),
+  }));
+
+  return (
+    <div
+      ref={drag}
+      style={{
+        opacity: isDragging ? 0.5 : 1,
+        cursor: 'move',
+        position: 'absolute',
+        left: `${shape.x * 10}px`,
+        top: `${shape.y * 10}px`,
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
+const renderShape = (shape: Shape) => {
+  const scale = 10;
+  switch (shape.type) {
+    case "rectangle":
+      return (
+        <div style={{
+          width: `${shape.width * scale}px`,
+          height: `${shape.height * scale}px`,
+          backgroundColor: "rgba(59, 130, 246, 0.3)",
+          border: "2px solid rgb(59, 130, 246)",
+          position: 'relative',
+        }}>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'black', fontWeight: 'bold' }}>
+            {`${shape.width}x${shape.height}`}
+          </div>
+        </div>
+      );
+    case "l-shape-tl":
+    case "l-shape-tr":
+    case "l-shape-bl":
+    case "l-shape-br":
+      // L-shapes are complex to represent with simple divs, so I'll just use a rectangle for now
+      return (
+        <div style={{
+          width: `${shape.width * scale}px`,
+          height: `${shape.height * scale}px`,
+          backgroundColor: "rgba(139, 92, 246, 0.3)",
+          border: "2px solid rgb(139, 92, 246)",
+          position: 'relative',
+        }}>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'black', fontWeight: 'bold' }}>
+            {`${shape.width}x${shape.height}`}
+          </div>
+        </div>
+      );
+    case "triangle":
+      // Triangles are also complex, so I'll use a rectangle for now
+      return (
+        <div style={{
+          width: `${shape.base * scale}px`,
+          height: `${shape.height * scale}px`,
+          backgroundColor: "rgba(34, 197, 94, 0.3)",
+          border: "2px solid rgb(34, 197, 94)",
+          position: 'relative',
+        }}>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'black', fontWeight: 'bold' }}>
+            {`B:${shape.base} H:${shape.height}`}
+          </div>
+        </div>
+      );
+    case "circle":
+      return (
+        <div style={{
+          width: `${shape.radius * 2 * scale}px`,
+          height: `${shape.radius * 2 * scale}px`,
+          borderRadius: '50%',
+          backgroundColor: "rgba(249, 115, 22, 0.3)",
+          border: "2px solid rgb(249, 115, 22)",
+          position: 'relative',
+        }}>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'black', fontWeight: 'bold' }}>
+            {`R:${shape.radius}`}
+          </div>
+        </div>
+      );
+    default:
+      return null;
+  }
+}
+
 export const ShapeCanvas = ({
   slab,
   shapes,
-  spacing
+  onUpdateShapes
 }: ShapeCanvasProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [selectedShape, setSelectedShape] = useState<string | null>(null);
+  const [resizing, setResizing] = useState(false);
+
+  const handleSelectShape = (id: string) => {
+    setSelectedShape(id);
+  }
+
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const scale = 10; // 1cm = 10px
-    const slabWidth = slab.type === "slab" ? slab.width * scale : 800;
-    const slabHeight = slab.type === "slab" ? slab.height * scale : 600;
-    
-    // Set canvas size to slab dimensions
-    canvas.width = slabWidth;
-    canvas.height = slabHeight;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw slab background
-    ctx.fillStyle = "hsl(var(--muted))";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw grid
-    ctx.strokeStyle = "hsl(var(--grid))";
-    ctx.lineWidth = 0.5;
-    const gridSize = scale; // 1cm = 10px
-
-    for (let x = 0; x <= canvas.width; x += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
-      ctx.stroke();
-    }
-    for (let y = 0; y <= canvas.height; y += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
-      ctx.stroke();
-    }
-    
-    // Draw slab border
-    ctx.strokeStyle = "hsl(var(--border))";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-    // Draw shapes with different colors
-    ctx.lineWidth = 2;
-    
-    const shapeColors: Record<string, { fill: string; stroke: string }> = {
-      rectangle: { fill: "rgba(59, 130, 246, 0.3)", stroke: "rgb(59, 130, 246)" },
-      "l-shape-tl": { fill: "rgba(139, 92, 246, 0.3)", stroke: "rgb(139, 92, 246)" },
-      "l-shape-tr": { fill: "rgba(139, 92, 246, 0.3)", stroke: "rgb(139, 92, 246)" },
-      "l-shape-bl": { fill: "rgba(139, 92, 246, 0.3)", stroke: "rgb(139, 92, 246)" },
-      "l-shape-br": { fill: "rgba(139, 92, 246, 0.3)", stroke: "rgb(139, 92, 246)" },
-      triangle: { fill: "rgba(34, 197, 94, 0.3)", stroke: "rgb(34, 197, 94)" },
-      circle: { fill: "rgba(249, 115, 22, 0.3)", stroke: "rgb(249, 115, 22)" },
-    };
-    
-    shapes.forEach(shape => {
-      const x = shape.x * scale;
-      const y = shape.y * scale;
-      const colors = shapeColors[shape.type] || { fill: "rgba(100, 100, 100, 0.3)", stroke: "rgb(100, 100, 100)" };
-      
-      ctx.fillStyle = colors.fill;
-      ctx.strokeStyle = colors.stroke;
-      
-      ctx.beginPath();
-      switch (shape.type) {
-        case "rectangle":
-          ctx.rect(x, y, shape.width * scale, shape.height * scale);
-          break;
-        case "l-shape-tl":
-        case "l-shape-tr":
-        case "l-shape-bl":
-        case "l-shape-br":
-          // Draw L-shape as path
-          const w = shape.width * scale;
-          const h = shape.height * scale;
-          const lw = shape.legWidth * scale;
-          const lh = shape.legHeight * scale;
-          ctx.moveTo(x, y);
-          if (shape.type === "l-shape-tl") {
-            ctx.lineTo(x + w, y);
-            ctx.lineTo(x + w, y + lh);
-            ctx.lineTo(x + lw, y + lh);
-            ctx.lineTo(x + lw, y + h);
-            ctx.lineTo(x, y + h);
-          } else if (shape.type === "l-shape-tr") {
-            ctx.lineTo(x + w, y);
-            ctx.lineTo(x + w, y + h);
-            ctx.lineTo(x + w - lw, y + h);
-            ctx.lineTo(x + w - lw, y + lh);
-            ctx.lineTo(x, y + lh);
-          } else if (shape.type === "l-shape-bl") {
-            ctx.lineTo(x + lw, y);
-            ctx.lineTo(x + lw, y + h - lh);
-            ctx.lineTo(x + w, y + h - lh);
-            ctx.lineTo(x + w, y + h);
-            ctx.lineTo(x, y + h);
-          } else if (shape.type === "l-shape-br") {
-            ctx.lineTo(x + w, y);
-            ctx.lineTo(x + w, y + h);
-            ctx.lineTo(x, y + h);
-            ctx.lineTo(x, y + h - lh);
-            ctx.lineTo(x + w - lw, y + h - lh);
-            ctx.lineTo(x + w - lw, y);
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizing) return;
+      const newShapes = shapes.map(shape => {
+        if (shape.id === selectedShape) {
+          if (shape.type === 'rectangle') {
+            return {
+              ...shape,
+              width: Math.round(e.clientX / 10 - shape.x),
+              height: Math.round(e.clientY / 10 - shape.y),
+            };
           }
-          ctx.closePath();
-          break;
-        case "triangle":
-          ctx.moveTo(x + shape.base * scale / 2, y);
-          ctx.lineTo(x + shape.base * scale, y + shape.height * scale);
-          ctx.lineTo(x, y + shape.height * scale);
-          ctx.closePath();
-          break;
-        case "circle":
-          ctx.arc(x + shape.radius * scale, y + shape.radius * scale, shape.radius * scale, 0, Math.PI * 2);
-          break;
-        case "slab":
-          ctx.rect(x, y, shape.width * scale, shape.height * scale);
-          break;
-      }
-      ctx.fill();
-      ctx.stroke();
-      
-      // Add measurements text
-      ctx.fillStyle = "rgb(0, 0, 0)";
-      ctx.strokeStyle = "rgb(255, 255, 255)";
-      ctx.lineWidth = 3;
-      ctx.font = "bold 12px sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      
-      let measurementText = "";
-      let centerX = x;
-      let centerY = y;
-      
-      switch (shape.type) {
-        case "rectangle":
-          measurementText = `${shape.width}×${shape.height}cm`;
-          centerX = x + (shape.width * scale) / 2;
-          centerY = y + (shape.height * scale) / 2;
-          break;
-        case "l-shape-tl":
-        case "l-shape-tr":
-        case "l-shape-bl":
-        case "l-shape-br":
-          measurementText = `${shape.width}×${shape.height}cm`;
-          centerX = x + (shape.width * scale) / 2;
-          centerY = y + (shape.height * scale) / 2;
-          break;
-        case "triangle":
-          measurementText = `B:${shape.base} H:${shape.height}cm`;
-          centerX = x + (shape.base * scale) / 2;
-          centerY = y + (shape.height * scale) / 2;
-          break;
-        case "circle":
-          measurementText = `R:${shape.radius}cm`;
-          centerX = x + shape.radius * scale;
-          centerY = y + shape.radius * scale;
-          break;
-      }
-      
-      // Draw text with white outline
-      ctx.strokeText(measurementText, centerX, centerY);
-      ctx.fillText(measurementText, centerX, centerY);
-    });
-  }, [slab, shapes, spacing]);
-  return <div className="border rounded-lg overflow-hidden shadow-sm" style={{
-    backgroundColor: "hsl(var(--canvas-bg))"
-  }}>
-      <canvas ref={canvasRef} className="w-full" />
-    </div>;
+        }
+        return shape;
+      });
+      onUpdateShapes(newShapes);
+    };
+
+    const handleMouseUp = () => {
+      setResizing(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [resizing, selectedShape, shapes, onUpdateShapes]);
+
+  const [, drop] = useDrop(() => ({
+    accept: "shape",
+    drop: (item: { id: string }, monitor) => {
+      const delta = monitor.getDifferenceFromInitialOffset();
+      const newShapes = shapes.map(shape => {
+        if (shape.id === item.id) {
+          return {
+            ...shape,
+            x: Math.round((shape.x * 10 + delta.x) / 10),
+            y: Math.round((shape.y * 10 + delta.y) / 10),
+          };
+        }
+        return shape;
+      });
+      onUpdateShapes(newShapes);
+    },
+  }), [shapes]);
+
+  return (
+    <div
+      ref={drop}
+      className="border rounded-lg overflow-hidden shadow-sm"
+      style={{
+        backgroundColor: "hsl(var(--canvas-bg))",
+        position: 'relative',
+        width: `${slab.type === 'slab' ? slab.width * 10 : 800}px`,
+        height: `${slab.type === 'slab' ? slab.height * 10 : 600}px`
+      }}
+    >
+      {shapes.map(shape => (
+        <div key={shape.id} onClick={() => handleSelectShape(shape.id)}>
+          <DraggableShape shape={shape}>
+            {renderShape(shape)}
+            {selectedShape === shape.id && (
+              <>
+                <div onMouseDown={() => setResizing(true)} style={{ position: 'absolute', top: '-5px', left: '-5px', width: '10px', height: '10px', backgroundColor: 'white', border: '1px solid black', cursor: 'nwse-resize' }} />
+                <div onMouseDown={() => setResizing(true)} style={{ position: 'absolute', top: '-5px', right: '-5px', width: '10px', height: '10px', backgroundColor: 'white', border: '1px solid black', cursor: 'nesw-resize' }} />
+                <div onMouseDown={() => setResizing(true)} style={{ position: 'absolute', bottom: '-5px', left: '-5px', width: '10px', height: '10px', backgroundColor: 'white', border: '1px solid black', cursor: 'nesw-resize' }} />
+                <div onMouseDown={() => setResizing(true)} style={{ position: 'absolute', bottom: '-5px', right: '-5px', width: '10px', height: '10px', backgroundColor: 'white', border: '1px solid black', cursor: 'nwse-resize' }} />
+              </>
+            )}
+          </DraggableShape>
+        </div>
+      ))}
+    </div>
+  );
 };
