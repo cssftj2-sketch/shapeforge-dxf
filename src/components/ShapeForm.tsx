@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShapeType, Shape } from "@/types/shapes";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Edit3, Ruler, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ShapeFormProps {
   onAddShape: (shape: Shape) => void;
@@ -23,6 +23,7 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
     base: "",
     radius: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (editingShape) {
@@ -48,8 +49,33 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
     }
   }, [editingShape]);
 
+  const validateDimension = (value: string, fieldName: string, min = 0.1, max = 1000): boolean => {
+    const num = parseFloat(value);
+    if (isNaN(num)) {
+      setErrors(prev => ({ ...prev, [fieldName]: "Must be a number" }));
+      return false;
+    }
+    if (num < min) {
+      setErrors(prev => ({ ...prev, [fieldName]: `Minimum ${min} cm` }));
+      return false;
+    }
+    if (num > max) {
+      setErrors(prev => ({ ...prev, [fieldName]: `Maximum ${max} cm` }));
+      return false;
+    }
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[fieldName];
+      return newErrors;
+    });
+    return true;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Clear previous errors
+    setErrors({});
     
     const baseShape = {
       id: editingShape?.id || crypto.randomUUID(),
@@ -58,10 +84,13 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
     };
 
     let newShape: Shape | null = null;
+    let isValid = true;
 
     switch (shapeType) {
       case "rectangle":
-        if (dimensions.width && dimensions.height) {
+        isValid = validateDimension(dimensions.width, "width") && 
+                  validateDimension(dimensions.height, "height");
+        if (dimensions.width && dimensions.height && isValid) {
           newShape = {
             ...baseShape,
             type: "rectangle",
@@ -74,19 +103,43 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
       case "l-shape-tr":
       case "l-shape-bl":
       case "l-shape-br":
-        if (dimensions.width && dimensions.height && dimensions.legWidth && dimensions.legHeight) {
-          newShape = {
-            ...baseShape,
-            type: shapeType,
-            width: parseFloat(dimensions.width),
-            height: parseFloat(dimensions.height),
-            legWidth: parseFloat(dimensions.legWidth),
-            legHeight: parseFloat(dimensions.legHeight),
-          };
+        isValid = validateDimension(dimensions.width, "width") && 
+                  validateDimension(dimensions.height, "height") &&
+                  validateDimension(dimensions.legWidth, "legWidth") &&
+                  validateDimension(dimensions.legHeight, "legHeight");
+        
+        if (isValid && dimensions.width && dimensions.height && dimensions.legWidth && dimensions.legHeight) {
+          const w = parseFloat(dimensions.width);
+          const h = parseFloat(dimensions.height);
+          const lw = parseFloat(dimensions.legWidth);
+          const lh = parseFloat(dimensions.legHeight);
+          
+          // Validate leg dimensions don't exceed total dimensions
+          if (lw > w) {
+            setErrors(prev => ({ ...prev, legWidth: "Leg width cannot exceed total width" }));
+            isValid = false;
+          }
+          if (lh > h) {
+            setErrors(prev => ({ ...prev, legHeight: "Leg height cannot exceed total height" }));
+            isValid = false;
+          }
+          
+          if (isValid) {
+            newShape = {
+              ...baseShape,
+              type: shapeType,
+              width: w,
+              height: h,
+              legWidth: lw,
+              legHeight: lh,
+            };
+          }
         }
         break;
       case "triangle":
-        if (dimensions.base && dimensions.height) {
+        isValid = validateDimension(dimensions.base, "base") && 
+                  validateDimension(dimensions.height, "height");
+        if (dimensions.base && dimensions.height && isValid) {
           newShape = {
             ...baseShape,
             type: "triangle",
@@ -96,7 +149,8 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
         }
         break;
       case "circle":
-        if (dimensions.radius) {
+        isValid = validateDimension(dimensions.radius, "radius");
+        if (dimensions.radius && isValid) {
           newShape = {
             ...baseShape,
             type: "circle",
@@ -105,7 +159,9 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
         }
         break;
       case "slab":
-        if (dimensions.width && dimensions.height) {
+        isValid = validateDimension(dimensions.width, "width", 10, 500) && 
+                  validateDimension(dimensions.height, "height", 10, 500);
+        if (dimensions.width && dimensions.height && isValid) {
           newShape = {
             ...baseShape,
             type: "slab",
@@ -116,7 +172,7 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
         break;
     }
 
-    if (newShape) {
+    if (newShape && isValid) {
       onAddShape(newShape);
       
       // Reset form only if not editing
@@ -133,32 +189,92 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
     }
   };
 
+  const getShapeIcon = (type: ShapeType) => {
+    const icons: Record<ShapeType, string> = {
+      rectangle: "▭",
+      "l-shape-tl": "⌐",
+      "l-shape-tr": "¬",
+      "l-shape-bl": "⌊",
+      "l-shape-br": "⌋",
+      triangle: "△",
+      circle: "○",
+      slab: "▢"
+    };
+    return icons[type] || "▭";
+  };
+
+  const getShapeDescription = (type: ShapeType) => {
+    const descriptions: Record<ShapeType, string> = {
+      rectangle: "Standard rectangular cut",
+      "l-shape-tl": "L-shape with notch in top-left",
+      "l-shape-tr": "L-shape with notch in top-right",
+      "l-shape-bl": "L-shape with notch in bottom-left",
+      "l-shape-br": "L-shape with notch in bottom-right",
+      triangle: "Triangular cut piece",
+      circle: "Circular cut piece",
+      slab: "Define workspace dimensions"
+    };
+    return descriptions[type] || "";
+  };
+
   const renderInputs = () => {
     switch (shapeType) {
       case "rectangle":
         return (
           <>
             <div className="space-y-2">
-              <Label htmlFor="width">Width (cm)</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="width" className="text-body font-medium flex items-center gap-1">
+                  <Ruler className="h-3.5 w-3.5" />
+                  Width (cm)
+                </Label>
+                {dimensions.width && (
+                  <span className="text-caption text-primary">{dimensions.width} cm</span>
+                )}
+              </div>
               <Input
                 id="width"
                 type="number"
                 step="0.1"
+                min="0.1"
+                max="1000"
                 value={dimensions.width}
-                onChange={(e) => setDimensions({ ...dimensions, width: e.target.value })}
+                onChange={(e) => {
+                  setDimensions({ ...dimensions, width: e.target.value });
+                  validateDimension(e.target.value, "width");
+                }}
+                className={`glass-card ${errors.width ? 'border-destructive' : ''}`}
+                placeholder="Enter width..."
                 required
               />
+              {errors.width && <p className="text-xs text-destructive">{errors.width}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="height">Height (cm)</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="height" className="text-body font-medium flex items-center gap-1">
+                  <Ruler className="h-3.5 w-3.5" />
+                  Height (cm)
+                </Label>
+                {dimensions.height && (
+                  <span className="text-caption text-primary">{dimensions.height} cm</span>
+                )}
+              </div>
               <Input
                 id="height"
                 type="number"
                 step="0.1"
+                min="0.1"
+                max="1000"
                 value={dimensions.height}
-                onChange={(e) => setDimensions({ ...dimensions, height: e.target.value })}
+                onChange={(e) => {
+                  setDimensions({ ...dimensions, height: e.target.value });
+                  validateDimension(e.target.value, "height");
+                }}
+                className={`glass-card ${errors.height ? 'border-destructive' : ''}`}
+                placeholder="Enter height..."
                 required
               />
+              {errors.height && <p className="text-xs text-destructive">{errors.height}</p>}
             </div>
           </>
         );
@@ -168,49 +284,73 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
       case "l-shape-br":
         return (
           <>
-            <div className="space-y-2">
-              <Label htmlFor="width">Total Width (cm)</Label>
-              <Input
-                id="width"
-                type="number"
-                step="0.1"
-                value={dimensions.width}
-                onChange={(e) => setDimensions({ ...dimensions, width: e.target.value })}
-                required
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="width" className="text-caption font-medium">Total Width</Label>
+                <Input
+                  id="width"
+                  type="number"
+                  step="0.1"
+                  value={dimensions.width}
+                  onChange={(e) => {
+                    setDimensions({ ...dimensions, width: e.target.value });
+                    validateDimension(e.target.value, "width");
+                  }}
+                  className={`glass-card ${errors.width ? 'border-destructive' : ''}`}
+                  required
+                />
+                {errors.width && <p className="text-xs text-destructive">{errors.width}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="height" className="text-caption font-medium">Total Height</Label>
+                <Input
+                  id="height"
+                  type="number"
+                  step="0.1"
+                  value={dimensions.height}
+                  onChange={(e) => {
+                    setDimensions({ ...dimensions, height: e.target.value });
+                    validateDimension(e.target.value, "height");
+                  }}
+                  className={`glass-card ${errors.height ? 'border-destructive' : ''}`}
+                  required
+                />
+                {errors.height && <p className="text-xs text-destructive">{errors.height}</p>}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="height">Total Height (cm)</Label>
-              <Input
-                id="height"
-                type="number"
-                step="0.1"
-                value={dimensions.height}
-                onChange={(e) => setDimensions({ ...dimensions, height: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="legWidth">Leg Width (cm)</Label>
-              <Input
-                id="legWidth"
-                type="number"
-                step="0.1"
-                value={dimensions.legWidth}
-                onChange={(e) => setDimensions({ ...dimensions, legWidth: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="legHeight">Leg Height (cm)</Label>
-              <Input
-                id="legHeight"
-                type="number"
-                step="0.1"
-                value={dimensions.legHeight}
-                onChange={(e) => setDimensions({ ...dimensions, legHeight: e.target.value })}
-                required
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="legWidth" className="text-caption font-medium">Leg Width</Label>
+                <Input
+                  id="legWidth"
+                  type="number"
+                  step="0.1"
+                  value={dimensions.legWidth}
+                  onChange={(e) => {
+                    setDimensions({ ...dimensions, legWidth: e.target.value });
+                    validateDimension(e.target.value, "legWidth");
+                  }}
+                  className={`glass-card ${errors.legWidth ? 'border-destructive' : ''}`}
+                  required
+                />
+                {errors.legWidth && <p className="text-xs text-destructive">{errors.legWidth}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="legHeight" className="text-caption font-medium">Leg Height</Label>
+                <Input
+                  id="legHeight"
+                  type="number"
+                  step="0.1"
+                  value={dimensions.legHeight}
+                  onChange={(e) => {
+                    setDimensions({ ...dimensions, legHeight: e.target.value });
+                    validateDimension(e.target.value, "legHeight");
+                  }}
+                  className={`glass-card ${errors.legHeight ? 'border-destructive' : ''}`}
+                  required
+                />
+                {errors.legHeight && <p className="text-xs text-destructive">{errors.legHeight}</p>}
+              </div>
             </div>
           </>
         );
@@ -218,67 +358,115 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
         return (
           <>
             <div className="space-y-2">
-              <Label htmlFor="base">Base (cm)</Label>
+              <Label htmlFor="base" className="text-body font-medium">Base (cm)</Label>
               <Input
                 id="base"
                 type="number"
                 step="0.1"
                 value={dimensions.base}
-                onChange={(e) => setDimensions({ ...dimensions, base: e.target.value })}
+                onChange={(e) => {
+                  setDimensions({ ...dimensions, base: e.target.value });
+                  validateDimension(e.target.value, "base");
+                }}
+                className={`glass-card ${errors.base ? 'border-destructive' : ''}`}
+                placeholder="Enter base..."
                 required
               />
+              {errors.base && <p className="text-xs text-destructive">{errors.base}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="height">Height (cm)</Label>
+              <Label htmlFor="height" className="text-body font-medium">Height (cm)</Label>
               <Input
                 id="height"
                 type="number"
                 step="0.1"
                 value={dimensions.height}
-                onChange={(e) => setDimensions({ ...dimensions, height: e.target.value })}
+                onChange={(e) => {
+                  setDimensions({ ...dimensions, height: e.target.value });
+                  validateDimension(e.target.value, "height");
+                }}
+                className={`glass-card ${errors.height ? 'border-destructive' : ''}`}
+                placeholder="Enter height..."
                 required
               />
+              {errors.height && <p className="text-xs text-destructive">{errors.height}</p>}
             </div>
           </>
         );
       case "circle":
         return (
           <div className="space-y-2">
-            <Label htmlFor="radius">Radius (cm)</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="radius" className="text-body font-medium flex items-center gap-1">
+                <Ruler className="h-3.5 w-3.5" />
+                Radius (cm)
+              </Label>
+              {dimensions.radius && (
+                <span className="text-caption text-primary">Ø {(parseFloat(dimensions.radius) * 2).toFixed(1)} cm</span>
+              )}
+            </div>
             <Input
               id="radius"
               type="number"
               step="0.1"
               value={dimensions.radius}
-              onChange={(e) => setDimensions({ ...dimensions, radius: e.target.value })}
+              onChange={(e) => {
+                setDimensions({ ...dimensions, radius: e.target.value });
+                validateDimension(e.target.value, "radius");
+              }}
+              className={`glass-card ${errors.radius ? 'border-destructive' : ''}`}
+              placeholder="Enter radius..."
               required
             />
+            {errors.radius && <p className="text-xs text-destructive">{errors.radius}</p>}
           </div>
         );
       case "slab":
         return (
           <>
+            <div className="p-3 rounded-lg state-info mb-3">
+              <p className="text-caption flex items-center gap-2">
+                <HelpCircle className="h-4 w-4" />
+                Define your marble slab workspace dimensions
+              </p>
+            </div>
             <div className="space-y-2">
-              <Label htmlFor="width">Width (cm)</Label>
+              <Label htmlFor="width" className="text-body font-medium">Slab Width (cm)</Label>
               <Input
                 id="width"
                 type="number"
-                step="0.1"
+                step="1"
+                min="10"
+                max="500"
                 value={dimensions.width}
-                onChange={(e) => setDimensions({ ...dimensions, width: e.target.value })}
+                onChange={(e) => {
+                  setDimensions({ ...dimensions, width: e.target.value });
+                  validateDimension(e.target.value, "width", 10, 500);
+                }}
+                className={`glass-card ${errors.width ? 'border-destructive' : ''}`}
+                placeholder="e.g. 120"
                 required
               />
+              {errors.width && <p className="text-xs text-destructive">{errors.width}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="height">Height (cm)</Label>
+              <Label htmlFor="height" className="text-body font-medium">Slab Height (cm)</Label>
               <Input
                 id="height"
                 type="number"
-                step="0.1"
+                step="1"
+                min="10"
+                max="500"
                 value={dimensions.height}
-                onChange={(e) => setDimensions({ ...dimensions, height: e.target.value })}
+                onChange={(e) => {
+                  setDimensions({ ...dimensions, height: e.target.value });
+                  validateDimension(e.target.value, "height", 10, 500);
+                }}
+                className={`glass-card ${errors.height ? 'border-destructive' : ''}`}
+                placeholder="e.g. 80"
                 required
               />
+              {errors.height && <p className="text-xs text-destructive">{errors.height}</p>}
             </div>
           </>
         );
@@ -286,51 +474,121 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>{editingShape ? "Edit Shape" : "Add Marble Shape"}</CardTitle>
-          {editingShape && onCancelEdit && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onCancelEdit}
-              type="button"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="shapeType">Shape Type</Label>
-            <Select value={shapeType} onValueChange={(value) => setShapeType(value as ShapeType)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="rectangle">Rectangle</SelectItem>
-                <SelectItem value="l-shape-tl">L-Shape (Top-Left)</SelectItem>
-                <SelectItem value="l-shape-tr">L-Shape (Top-Right)</SelectItem>
-                <SelectItem value="l-shape-bl">L-Shape (Bottom-Left)</SelectItem>
-                <SelectItem value="l-shape-br">L-Shape (Bottom-Right)</SelectItem>
-                <SelectItem value="triangle">Triangle</SelectItem>
-                <SelectItem value="circle">Circle</SelectItem>
-                <SelectItem value="slab">Slab</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {renderInputs()}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="shapeType" className="text-body font-semibold">Shape Type</Label>
+        <Select value={shapeType} onValueChange={(value) => setShapeType(value as ShapeType)}>
+          <SelectTrigger className="glass-card h-11">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="glass-elevated">
+            <SelectItem value="slab" className="cursor-pointer">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{getShapeIcon("slab")}</span>
+                <div>
+                  <div className="font-medium">Slab</div>
+                  <div className="text-xs text-muted-foreground">{getShapeDescription("slab")}</div>
+                </div>
+              </div>
+            </SelectItem>
+            <SelectItem value="rectangle" className="cursor-pointer">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{getShapeIcon("rectangle")}</span>
+                <div>
+                  <div className="font-medium">Rectangle</div>
+                  <div className="text-xs text-muted-foreground">{getShapeDescription("rectangle")}</div>
+                </div>
+              </div>
+            </SelectItem>
+            <SelectItem value="l-shape-tl" className="cursor-pointer">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{getShapeIcon("l-shape-tl")}</span>
+                <div>
+                  <div className="font-medium">L-Shape (Top-Left)</div>
+                  <div className="text-xs text-muted-foreground">{getShapeDescription("l-shape-tl")}</div>
+                </div>
+              </div>
+            </SelectItem>
+            <SelectItem value="l-shape-tr" className="cursor-pointer">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{getShapeIcon("l-shape-tr")}</span>
+                <div>
+                  <div className="font-medium">L-Shape (Top-Right)</div>
+                  <div className="text-xs text-muted-foreground">{getShapeDescription("l-shape-tr")}</div>
+                </div>
+              </div>
+            </SelectItem>
+            <SelectItem value="l-shape-bl" className="cursor-pointer">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{getShapeIcon("l-shape-bl")}</span>
+                <div>
+                  <div className="font-medium">L-Shape (Bottom-Left)</div>
+                  <div className="text-xs text-muted-foreground">{getShapeDescription("l-shape-bl")}</div>
+                </div>
+              </div>
+            </SelectItem>
+            <SelectItem value="l-shape-br" className="cursor-pointer">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{getShapeIcon("l-shape-br")}</span>
+                <div>
+                  <div className="font-medium">L-Shape (Bottom-Right)</div>
+                  <div className="text-xs text-muted-foreground">{getShapeDescription("l-shape-br")}</div>
+                </div>
+              </div>
+            </SelectItem>
+            <SelectItem value="triangle" className="cursor-pointer">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{getShapeIcon("triangle")}</span>
+                <div>
+                  <div className="font-medium">Triangle</div>
+                  <div className="text-xs text-muted-foreground">{getShapeDescription("triangle")}</div>
+                </div>
+              </div>
+            </SelectItem>
+            <SelectItem value="circle" className="cursor-pointer">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{getShapeIcon("circle")}</span>
+                <div>
+                  <div className="font-medium">Circle</div>
+                  <div className="text-xs text-muted-foreground">{getShapeDescription("circle")}</div>
+                </div>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      {renderInputs()}
 
-          <Button type="submit" className="w-full">
-            <Plus className="mr-2 h-4 w-4" />
-            {editingShape ? "Update Shape" : "Add Shape"}
+      <div className="flex gap-2 pt-2">
+        <Button 
+          type="submit" 
+          className={`flex-1 h-11 ${shapeType === 'slab' ? 'btn-accent' : 'btn-primary'}`}
+        >
+          {editingShape ? (
+            <>
+              <Edit3 className="mr-2 h-4 w-4" />
+              Update Shape
+            </>
+          ) : (
+            <>
+              <Plus className="mr-2 h-4 w-4" />
+              Add {shapeType === 'slab' ? 'Slab' : 'Shape'}
+            </>
+          )}
+        </Button>
+        {editingShape && onCancelEdit && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancelEdit}
+            className="glass-panel"
+            size="icon"
+          >
+            <X className="h-4 w-4" />
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+        )}
+      </div>
+    </form>
   );
 };
