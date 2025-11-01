@@ -85,11 +85,11 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
         } else if (shape.type === "l-shape-br") {
           dxf += `10\n${x}\n20\n${y}\n`;
           dxf += `10\n${x + w}\n20\n${y}\n`;
-          dxf += `10\n${x + w}\n20\n${y + h}\n`;
-          dxf += `10\n${x}\n20\n${y + h}\n`;
-          dxf += `10\n${x}\n20\n${y + h - lh}\n`;
+          dxf += `10\n${x + w}\n20\n${y + h - lh}\n`;
           dxf += `10\n${x + w - lw}\n20\n${y + h - lh}\n`;
-          dxf += `10\n${x + w - lw}\n20\n${y}\n`;
+          dxf += `10\n${x + w - lw}\n20\n${y + h}\n`;
+          dxf += `10\n${x}\n20\n${y + h}\n`;
+          dxf += `10\n${x}\n20\n${y}\n`;
         }
         break;
         
