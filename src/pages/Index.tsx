@@ -8,11 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import { arrangeShapes } from "@/utils/shapeArrangement";
+import { optimizeNesting } from "@/utils/optimizedNesting";
 import { downloadDXF } from "@/utils/dxfExport";
 import { downloadSVG } from "@/utils/svgExport";
 import { handleDXFUpload } from "@/utils/dxfImport";
-import { Download, Layout, Upload } from "lucide-react";
+import { Download, Layout, Upload, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 const Index = () => {
@@ -22,6 +24,9 @@ const Index = () => {
   const [spacing, setSpacing] = useState(1); // 1cm default spacing
   const [includeSlab, setIncludeSlab] = useState(true);
   const [editingShape, setEditingShape] = useState<Shape | null>(null);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizationProgress, setOptimizationProgress] = useState(0);
+  const [efficiency, setEfficiency] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddShape = (shape: Shape) => {
@@ -72,7 +77,60 @@ const Index = () => {
     }
     const arranged = arrangeShapes(shapes, spacing, slab);
     setArrangedShapes(arranged);
+    setEfficiency(null);
     toast.success(`Arranged ${shapes.length} shapes with ${spacing}cm spacing`);
+  };
+
+  const handleOptimize = async () => {
+    if (!slab) {
+      toast.error("Please add a slab first");
+      return;
+    }
+    
+    if (shapes.length === 0) {
+      toast.error("Please add shapes to optimize");
+      return;
+    }
+
+    setIsOptimizing(true);
+    setOptimizationProgress(0);
+    setEfficiency(null);
+    
+    try {
+      const result = await optimizeNesting(
+        shapes,
+        spacing,
+        slab,
+        (progress, bestSoFar) => {
+          setOptimizationProgress(progress);
+          if (bestSoFar.shapes.length > 0) {
+            setArrangedShapes(bestSoFar.shapes);
+            setEfficiency(bestSoFar.efficiency);
+          }
+        }
+      );
+
+      setArrangedShapes(result.shapes);
+      setEfficiency(result.efficiency);
+      
+      toast.success(
+        `Optimization complete! Placed ${result.shapes.length}/${shapes.length} shapes with ${result.efficiency.toFixed(1)}% efficiency`,
+        { duration: 5000 }
+      );
+      
+      if (result.shapes.length < shapes.length) {
+        toast.warning(
+          `${shapes.length - result.shapes.length} shapes didn't fit. Consider a larger slab or fewer shapes.`,
+          { duration: 7000 }
+        );
+      }
+    } catch (error) {
+      console.error("Optimization error:", error);
+      toast.error("Optimization failed. Please try again.");
+    } finally {
+      setIsOptimizing(false);
+      setOptimizationProgress(0);
+    }
   };
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -164,14 +222,45 @@ const Index = () => {
                     onCheckedChange={setIncludeSlab}
                   />
                 </div>
-                <Button 
-                  onClick={handleArrange} 
-                  className="w-full"
-                  disabled={shapes.length === 0}
-                >
-                  <Layout className="mr-2 h-4 w-4" />
-                  Arrange Shapes
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    onClick={handleArrange} 
+                    className="w-full"
+                    disabled={shapes.length === 0 || isOptimizing}
+                    variant="outline"
+                  >
+                    <Layout className="mr-2 h-4 w-4" />
+                    Quick Arrange
+                  </Button>
+                  <Button 
+                    onClick={handleOptimize} 
+                    className="w-full"
+                    disabled={shapes.length === 0 || isOptimizing}
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Optimize
+                  </Button>
+                </div>
+                {isOptimizing && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Optimizing nesting...</span>
+                      <span className="font-medium">{optimizationProgress.toFixed(0)}%</span>
+                    </div>
+                    <Progress value={optimizationProgress} />
+                  </div>
+                )}
+                {efficiency !== null && !isOptimizing && (
+                  <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Material Efficiency</span>
+                      <span className="text-lg font-bold text-primary">{efficiency.toFixed(1)}%</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {arrangedShapes.length} of {shapes.length} shapes placed
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Button 
                     onClick={() => fileInputRef.current?.click()}
