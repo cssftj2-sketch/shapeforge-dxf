@@ -38,7 +38,7 @@ interface Shape {
   nodes?: Point[];
 }
 
-const ShapeDesigner = () => {
+const ShapeCanvas = () => {
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedTool, setSelectedTool] = useState<ShapeType | null>(null);
@@ -1032,4 +1032,4 @@ const ShapeDesigner = () => {
   );
 };
 
-export default ShapeDesigner;
+export default ShapeCanvas;
