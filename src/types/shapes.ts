@@ -6,13 +6,24 @@ export type ShapeType =
   | "l-shape-br" 
   | "triangle" 
   | "circle"
+  | "line"
+  | "arc"
   | "slab";
+
+export type ToolMode = 'select' | 'draw' | 'edit-nodes' | 'trim';
+
+export interface Point {
+  x: number;
+  y: number;
+}
 
 export interface BaseShape {
   id: string;
   type: ShapeType;
   x: number;
   y: number;
+  fill?: string;
+  stroke?: string;
 }
 
 export interface Rectangle extends BaseShape {
@@ -40,10 +51,23 @@ export interface Circle extends BaseShape {
   radius: number;
 }
 
+export interface Line extends BaseShape {
+  type: "line";
+  points: number[];
+  nodes?: Point[];
+}
+
+export interface Arc extends BaseShape {
+  type: "arc";
+  innerRadius: number;
+  outerRadius: number;
+  angle: number;
+}
+
 export interface Slab extends BaseShape {
   type: "slab";
   width: number;
   height: number;
 }
 
-export type Shape = Rectangle | LShape | Triangle | Circle | Slab;
+export type Shape = Rectangle | LShape | Triangle | Circle | Line | Arc | Slab;
