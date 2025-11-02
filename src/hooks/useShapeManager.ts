@@ -8,7 +8,10 @@ export const useShapeManager = (initialShapes: Shape[]) => {
   const selectedShape = shapes.find(s => s.id === selectedId);
 
   const updateShape = (id: string, updates: Partial<Shape>) => {
-    setShapes(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+    setShapes(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      return { ...s, ...updates } as Shape;
+    }));
   };
 
   const addShape = (shape: Shape) => {

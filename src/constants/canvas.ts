@@ -11,5 +11,6 @@ export const COLORS: Record<ShapeType, { fill: string; stroke: string }> = {
   'l-shape-bl': { fill: 'rgba(139, 92, 246, 0.3)', stroke: 'rgb(139, 92, 246)' },
   'l-shape-br': { fill: 'rgba(139, 92, 246, 0.3)', stroke: 'rgb(139, 92, 246)' },
   line: { fill: 'transparent', stroke: 'rgb(100, 100, 100)' },
-  arc: { fill: 'transparent', stroke: 'rgb(220, 38, 127)' }
+  arc: { fill: 'transparent', stroke: 'rgb(220, 38, 127)' },
+  slab: { fill: 'rgba(156, 163, 175, 0.1)', stroke: 'rgb(75, 85, 99)' }
 };

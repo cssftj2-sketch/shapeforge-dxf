@@ -37,6 +37,8 @@ export const ShapeList = ({ shapes, onRemoveShape, onEditShape }: ShapeListProps
       'l-shape-tr': 'text-purple-400',
       'l-shape-bl': 'text-purple-400',
       'l-shape-br': 'text-purple-400',
+      line: 'text-gray-400',
+      arc: 'text-pink-400',
       slab: 'text-primary'
     };
     return colors[type] || 'text-gray-400';
@@ -88,6 +90,8 @@ export const ShapeList = ({ shapes, onRemoveShape, onEditShape }: ShapeListProps
       'l-shape-tr': "L-Shape TR",
       'l-shape-bl': "L-Shape BL",
       'l-shape-br': "L-Shape BR",
+      line: "Line",
+      arc: "Arc",
       slab: "Slab"
     };
     return names[type] || "Shape";

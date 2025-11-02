@@ -226,11 +226,11 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
       );
 
     default:
-      if (shape.type.startsWith('l-shape-')) {
-        const w = shape.width! * scale;
-        const h = shape.height! * scale;
-        const lw = shape.legWidth! * scale;
-        const lh = shape.legHeight! * scale;
+      if (shape.type.startsWith('l-shape-') && 'legWidth' in shape && 'legHeight' in shape) {
+        const w = shape.width * scale;
+        const h = shape.height * scale;
+        const lw = shape.legWidth * scale;
+        const lh = shape.legHeight * scale;
         const lPoints = getLShapePoints(shape.type, w, h, lw, lh);
         
         return (

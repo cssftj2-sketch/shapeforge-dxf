@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Shape } from "@/types/shapes";
 import { ShapeForm } from "@/components/ShapeForm";
-import { ShapeCanvas } from "@/components/ShapeCanvas";
+import ShapeCanvas from "@/components/ShapeCanvas";
 import { ShapeList } from "@/components/ShapeList";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -542,11 +542,7 @@ const Index = () => {
                 <CardContent>
                   {slab ? (
                     <div className="canvas-container">
-                      <ShapeCanvas 
-                        slab={slab}
-                        shapes={arrangedShapes.length > 0 ? arrangedShapes : shapes}
-                        onUpdateShapes={handleUpdateShapes}
-                      />
+                      <ShapeCanvas />
                     </div>
                   ) : (
                     /* Empty State with Guidance */

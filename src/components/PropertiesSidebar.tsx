@@ -116,13 +116,13 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                   </>
                 )}
 
-                {selectedShape.type.startsWith('l-shape-') && (
+                {selectedShape.type.startsWith('l-shape-') && 'legWidth' in selectedShape && (
                   <>
                     <div className="space-y-1">
                       <Label className="text-xs">Width (cm)</Label>
                       <Input
                         type="number"
-                        value={selectedShape.width || 0}
+                        value={'width' in selectedShape ? selectedShape.width : 0}
                         onChange={(e) => onUpdateMeasurement('width', parseFloat(e.target.value))}
                         step="0.1"
                         min="0.1"
@@ -132,7 +132,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                       <Label className="text-xs">Height (cm)</Label>
                       <Input
                         type="number"
-                        value={selectedShape.height || 0}
+                        value={'height' in selectedShape ? selectedShape.height : 0}
                         onChange={(e) => onUpdateMeasurement('height', parseFloat(e.target.value))}
                         step="0.1"
                         min="0.1"

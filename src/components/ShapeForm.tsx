@@ -198,6 +198,8 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
       "l-shape-br": "⌋",
       triangle: "△",
       circle: "○",
+      line: "⟍",
+      arc: "⌒",
       slab: "▢"
     };
     return icons[type] || "▭";
@@ -212,6 +214,8 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
       "l-shape-br": "L-shape with notch in bottom-right",
       triangle: "Triangular cut piece",
       circle: "Circular cut piece",
+      line: "Line segment",
+      arc: "Arc segment",
       slab: "Define workspace dimensions"
     };
     return descriptions[type] || "";

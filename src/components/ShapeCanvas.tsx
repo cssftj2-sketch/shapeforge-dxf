@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Rect, Line, Transformer } from 'react-konva';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shape, ShapeType, ToolMode } from './types/shapes';
-import { GRID_SIZE } from './constants/canvas';
-import { snapToGrid, createShapeFromDrag } from './utils/geometry';
-import { useShapeManager } from './hooks/useShapeManager';
-import { ShapeRenderer } from './components/ShapeRenderer';
-import { HorizontalToolbar } from './components/HorizontalToolbar';
-import { PropertiesSidebar } from './components/PropertiesSidebar';
+import { Shape, ShapeType, ToolMode } from '@/types/shapes';
+import { GRID_SIZE } from '@/constants/canvas';
+import { snapToGrid, createShapeFromDrag } from '@/utils/geometry';
+import { useShapeManager } from '@/hooks/useShapeManager';
+import { ShapeRenderer } from '@/components/ShapeRenderer';
+import { HorizontalToolbar } from '@/components/HorizontalToolbar';
+import { PropertiesSidebar } from '@/components/PropertiesSidebar';
 
 export default function ShapeCanvas() {
   const slabWidth = 80;
@@ -139,9 +139,9 @@ export default function ShapeCanvas() {
     const shape = shapes.find(s => s.id === id);
     if (!shape) return;
     
-    if (shape.width && shape.height) {
+    if ('width' in shape && 'height' in shape) {
       updateShape(id, { width: shape.width * 0.8, height: shape.height * 0.8 });
-    } else if (shape.radius) {
+    } else if ('radius' in shape) {
       updateShape(id, { radius: shape.radius * 0.8 });
     }
     console.log('Shape trimmed');
@@ -177,11 +177,11 @@ export default function ShapeCanvas() {
       y: shape.y + offsetValue
     };
     
-    if (shape.width && shape.height) {
-      newShape.width = shape.width + offsetValue * 2;
-      newShape.height = shape.height + offsetValue * 2;
-    } else if (shape.radius) {
-      newShape.radius = shape.radius + offsetValue;
+    if ('width' in shape && 'height' in shape && shape.width && shape.height) {
+      (newShape as any).width = shape.width + offsetValue * 2;
+      (newShape as any).height = shape.height + offsetValue * 2;
+    } else if ('radius' in shape && shape.radius) {
+      (newShape as any).radius = shape.radius + offsetValue;
     }
     
     addShape(newShape);
@@ -203,9 +203,11 @@ export default function ShapeCanvas() {
     };
     
     if (axis === 'horizontal') {
-      newShape.x = slabWidth - shape.x - (shape.width || shape.radius ? (shape.width || shape.radius! * 2) : 0);
+      const width = 'width' in shape ? shape.width : ('radius' in shape ? shape.radius! * 2 : 0);
+      newShape.x = slabWidth - shape.x - width;
     } else {
-      newShape.y = slabHeight - shape.y - (shape.height || shape.radius ? (shape.height || shape.radius! * 2) : 0);
+      const height = 'height' in shape ? shape.height : ('radius' in shape ? shape.radius! * 2 : 0);
+      newShape.y = slabHeight - shape.y - height;
     }
     
     addShape(newShape);
