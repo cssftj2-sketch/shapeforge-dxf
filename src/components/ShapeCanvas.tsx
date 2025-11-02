@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Square, Move, Trash2, Scissors, Copy, FlipHorizontal, Edit3, Minus } from 'lucide-react';
+import { Shape as ImportedShape } from '@/types/shapes';
 
 const GRID_SIZE = 10; // 1cm = 10px
 
@@ -37,13 +38,111 @@ interface Shape {
   nodes?: Point[];
 }
 
+// Converter functions between ImportedShape and Canvas Shape
+const importedToCanvas = (imported: ImportedShape): Shape => {
+  const base = {
+    id: imported.id,
+    x: imported.x,
+    y: imported.y,
+    fill: 'rgba(135, 206, 250, 0.5)',
+    stroke: '#1e40af',
+  };
+
+  switch (imported.type) {
+    case 'rectangle':
+      return { ...base, type: 'rectangle', width: imported.width, height: imported.height };
+    case 'circle':
+      return { ...base, type: 'circle', radius: imported.radius };
+    case 'triangle':
+      return { ...base, type: 'triangle', base: imported.base, height: imported.height, width: imported.base };
+    case 'l-shape-tl':
+    case 'l-shape-tr':
+    case 'l-shape-bl':
+    case 'l-shape-br':
+      return {
+        ...base,
+        type: imported.type,
+        width: imported.width,
+        height: imported.height,
+        legWidth: imported.legWidth,
+        legHeight: imported.legHeight,
+      };
+    case 'slab':
+      return { ...base, type: 'rectangle', width: imported.width, height: imported.height };
+  }
+};
+
+const canvasToImported = (canvas: Shape): ImportedShape | null => {
+  switch (canvas.type) {
+    case 'rectangle':
+      return {
+        id: canvas.id,
+        type: 'rectangle',
+        x: canvas.x,
+        y: canvas.y,
+        width: canvas.width!,
+        height: canvas.height!,
+      };
+    case 'circle':
+      return {
+        id: canvas.id,
+        type: 'circle',
+        x: canvas.x,
+        y: canvas.y,
+        radius: canvas.radius!,
+      };
+    case 'triangle':
+      return {
+        id: canvas.id,
+        type: 'triangle',
+        x: canvas.x,
+        y: canvas.y,
+        base: canvas.base!,
+        height: canvas.height!,
+      };
+    case 'l-shape-tl':
+    case 'l-shape-tr':
+    case 'l-shape-bl':
+    case 'l-shape-br':
+      return {
+        id: canvas.id,
+        type: canvas.type,
+        x: canvas.x,
+        y: canvas.y,
+        width: canvas.width!,
+        height: canvas.height!,
+        legWidth: canvas.legWidth!,
+        legHeight: canvas.legHeight!,
+      };
+    default:
+      // Skip line and arc types which aren't in ImportedShape
+      return null;
+  }
+};
+
 interface ShapeCanvasProps {
-  slab: { width: number; height: number };
-  shapes: Shape[];
-  onUpdateShapes: (shapes: Shape[]) => void;
+  slab: ImportedShape;
+  shapes: ImportedShape[];
+  onUpdateShapes: (shapes: ImportedShape[]) => void;
 }
 
-export const ShapeCanvas = ({ slab, shapes, onUpdateShapes }: ShapeCanvasProps) => {
+export const ShapeCanvas = ({ slab, shapes: importedShapes, onUpdateShapes: onUpdateImported }: ShapeCanvasProps) => {
+  // Convert imported shapes to canvas shapes
+  const [shapes, setShapes] = useState<Shape[]>(() => importedShapes.map(importedToCanvas));
+  
+  // Sync with external changes
+  React.useEffect(() => {
+    setShapes(importedShapes.map(importedToCanvas));
+  }, [importedShapes]);
+  
+  // Wrapper to convert back when updating
+  const onUpdateShapes = (updatedShapes: Shape[]) => {
+    const converted = updatedShapes.map(canvasToImported).filter((s): s is ImportedShape => s !== null);
+    onUpdateImported(converted);
+  };
+  
+  const slabWidth = slab.type === 'slab' ? slab.width : 80;
+  const slabHeight = slab.type === 'slab' ? slab.height : 60;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedTool, setSelectedTool] = useState<ShapeType | null>(null);
   const [toolMode, setToolMode] = useState<ToolMode>('select');
@@ -61,8 +160,6 @@ export const ShapeCanvas = ({ slab, shapes, onUpdateShapes }: ShapeCanvasProps) 
   const shapeRefs = useRef<{ [key: string]: any }>({});
 
   const selectedShape = shapes.find(s => s.id === selectedId);
-  const slabWidth = slab.width;
-  const slabHeight = slab.height;
 
   const colors: { [key in ShapeType]: { fill: string; stroke: string } } = {
     rectangle: { fill: 'rgba(59, 130, 246, 0.3)', stroke: 'rgb(59, 130, 246)' },

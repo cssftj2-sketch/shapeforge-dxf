@@ -148,8 +148,27 @@ const pointInPolygon = (point: Point, polygon: Point[]): boolean => {
   return inside;
 };
 
-// Check if two shapes collide/overlap
+// Special case: Circle-to-circle collision
+const circlesCollide = (c1: Extract<Shape, { type: "circle" }>, c2: Extract<Shape, { type: "circle" }>, buffer: number): boolean => {
+  const center1X = c1.x + c1.radius;
+  const center1Y = c1.y + c1.radius;
+  const center2X = c2.x + c2.radius;
+  const center2Y = c2.y + c2.radius;
+  
+  const dx = center2X - center1X;
+  const dy = center2Y - center1Y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  return distance < (c1.radius + c2.radius + buffer);
+};
+
+// Check if two shapes collide/overlap with buffer spacing
 export const shapesCollide = (shape1: Shape, shape2: Shape, buffer: number = 0): boolean => {
+  // Special case: both circles
+  if (shape1.type === "circle" && shape2.type === "circle") {
+    return circlesCollide(shape1, shape2, buffer);
+  }
+  
   // First, quick bounding box check with buffer
   const box1 = getShapeBoundingBox(shape1);
   const box2 = getShapeBoundingBox(shape2);
@@ -189,7 +208,39 @@ export const shapesCollide = (shape1: Shape, shape2: Shape, buffer: number = 0):
     }
   }
   
+  // Check for edge intersections (in case shapes cross each other)
+  // This handles cases where shapes overlap but no vertices are inside
+  const edges1 = getShapeEdges(points1);
+  const edges2 = getShapeEdges(points2);
+  
+  for (const edge1 of edges1) {
+    for (const edge2 of edges2) {
+      if (edgesIntersect(edge1[0], edge1[1], edge2[0], edge2[1])) {
+        return true;
+      }
+    }
+  }
+  
   return false;
+};
+
+// Get edges from points
+const getShapeEdges = (points: Point[]): [Point, Point][] => {
+  const edges: [Point, Point][] = [];
+  for (let i = 0; i < points.length; i++) {
+    const j = (i + 1) % points.length;
+    edges.push([points[i], points[j]]);
+  }
+  return edges;
+};
+
+// Check if two line segments intersect
+const edgesIntersect = (a1: Point, a2: Point, b1: Point, b2: Point): boolean => {
+  const ccw = (A: Point, B: Point, C: Point) => {
+    return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x);
+  };
+  
+  return ccw(a1, b1, b2) !== ccw(a2, b1, b2) && ccw(a1, a2, b1) !== ccw(a1, a2, b2);
 };
 
 // Check if shape is within slab bounds

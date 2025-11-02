@@ -70,7 +70,7 @@ const calculateEfficiency = (shapes: Shape[], slab: Shape): number => {
   return (totalShapeArea / slabArea) * 100;
 };
 
-// Sort strategies for optimization
+// State-of-the-art sorting strategies for optimization
 const sortingStrategies = [
   { name: "area-desc", fn: (a: Shape, b: Shape) => {
     const aB = getShapeBounds(a);
@@ -96,6 +96,21 @@ const sortingStrategies = [
     const aB = getShapeBounds(a);
     const bB = getShapeBounds(b);
     return (2 * (bB.width + bB.height)) - (2 * (aB.width + aB.height));
+  }},
+  { name: "aspect-ratio", fn: (a: Shape, b: Shape) => {
+    const aB = getShapeBounds(a);
+    const bB = getShapeBounds(b);
+    const ratioA = Math.max(aB.width, aB.height) / Math.min(aB.width, aB.height);
+    const ratioB = Math.max(bB.width, bB.height) / Math.min(bB.width, bB.height);
+    return ratioB - ratioA;
+  }},
+  { name: "mixed-strategy", fn: (a: Shape, b: Shape) => {
+    const aB = getShapeBounds(a);
+    const bB = getShapeBounds(b);
+    // Combine area and perimeter for balanced optimization
+    const scoreA = (aB.width * aB.height) + (aB.width + aB.height);
+    const scoreB = (bB.width * bB.height) + (bB.width + bB.height);
+    return scoreB - scoreA;
   }},
 ];
 
