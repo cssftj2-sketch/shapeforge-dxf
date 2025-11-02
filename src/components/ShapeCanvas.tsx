@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Square, Move, Trash2, Scissors, Copy, FlipHorizontal, Edit3, Minus } from 'lucide-react';
+import { Square, Move, Trash2, Scissors, Copy, FlipHorizontal, Edit3, Minus, PenTool, Circle as CircleIcon, Triangle as TriangleIcon, CornerUpLeft, Smile, ArrowRightFromLine } from 'lucide-react';
 import { Shape as ImportedShape } from '@/types/shapes';
 
 const GRID_SIZE = 10; // 1cm = 10px
@@ -734,17 +734,16 @@ export const ShapeCanvas = ({ slab, shapes: importedShapes, onUpdateShapes: onUp
                         setToolMode('select');
                         setSelectedTool(null);
                       }}
-                      size="sm"
+                      className="w-full p-6"
                     >
-                      <Move className="h-4 w-4 mr-1" />
-                      Select
+                      <Move className="h-8 w-8" />
                     </Button>
                     <Button
                       variant={toolMode === 'draw' ? 'default' : 'outline'}
                       onClick={() => setToolMode('draw')}
-                      size="sm"
+                      className="w-full p-6"
                     >
-                      Draw
+                      <PenTool className="h-8 w-8" />
                     </Button>
                   </div>
                 </div>
@@ -752,50 +751,48 @@ export const ShapeCanvas = ({ slab, shapes: importedShapes, onUpdateShapes: onUp
                 {toolMode === 'draw' && (
                   <div className="space-y-2">
                     <Label className="font-semibold">Shapes</Label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <Button
                         variant={selectedTool === 'line' ? 'default' : 'outline'}
                         onClick={() => setSelectedTool('line')}
-                        size="sm"
+                        className="p-6"
                       >
-                        <Minus className="h-4 w-4 mr-1" />
-                        Line
+                        <Minus className="h-7 w-7" />
                       </Button>
                       <Button
                         variant={selectedTool === 'arc' ? 'default' : 'outline'}
                         onClick={() => setSelectedTool('arc')}
-                        size="sm"
+                        className="p-6"
                       >
-                        Arc
+                        <Smile className="h-7 w-7" />
                       </Button>
                       <Button
                         variant={selectedTool === 'circle' ? 'default' : 'outline'}
                         onClick={() => setSelectedTool('circle')}
-                        size="sm"
+                        className="p-6"
                       >
-                        ⭕ Circle
+                        <CircleIcon className="h-7 w-7" />
                       </Button>
                       <Button
                         variant={selectedTool === 'rectangle' ? 'default' : 'outline'}
                         onClick={() => setSelectedTool('rectangle')}
-                        size="sm"
+                        className="p-6"
                       >
-                        <Square className="h-4 w-4 mr-1" />
-                        Rect
+                        <Square className="h-7 w-7" />
                       </Button>
                       <Button
                         variant={selectedTool === 'triangle' ? 'default' : 'outline'}
                         onClick={() => setSelectedTool('triangle')}
-                        size="sm"
+                        className="p-6"
                       >
-                        🔺 Tri
+                        <TriangleIcon className="h-7 w-7" />
                       </Button>
                       <Button
                         variant={selectedTool === 'l-shape-tl' ? 'default' : 'outline'}
                         onClick={() => setSelectedTool('l-shape-tl')}
-                        size="sm"
+                        className="p-6"
                       >
-                        L-TL
+                        <CornerUpLeft className="h-7 w-7" />
                       </Button>
                     </div>
                   </div>
@@ -923,18 +920,16 @@ export const ShapeCanvas = ({ slab, shapes: importedShapes, onUpdateShapes: onUp
                     <Button
                       variant={toolMode === 'edit-nodes' ? 'default' : 'outline'}
                       onClick={() => setToolMode('edit-nodes')}
-                      size="sm"
+                      className="p-6"
                     >
-                      <Edit3 className="h-4 w-4 mr-1" />
-                      Nodes
+                      <Edit3 className="h-8 w-8" />
                     </Button>
                     <Button
                       variant={toolMode === 'trim' ? 'default' : 'outline'}
                       onClick={() => setToolMode('trim')}
-                      size="sm"
+                      className="p-6"
                     >
-                      <Scissors className="h-4 w-4 mr-1" />
-                      Trim
+                      <Scissors className="h-8 w-8" />
                     </Button>
                   </div>
                 </div>
@@ -943,71 +938,69 @@ export const ShapeCanvas = ({ slab, shapes: importedShapes, onUpdateShapes: onUp
                   <>
                     <div className="border-t pt-4 space-y-2">
                       <Label className="font-semibold">Transform</Label>
-                      <Button
-                        variant="outline"
-                        onClick={handleDuplicate}
-                        size="sm"
-                        className="w-full"
-                      >
-                        <Copy className="h-4 w-4 mr-2" />
-                        Duplicate
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleMirror('horizontal')}
-                        size="sm"
-                        className="w-full"
-                      >
-                        <FlipHorizontal className="h-4 w-4 mr-2" />
-                        Mirror H
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleMirror('vertical')}
-                        size="sm"
-                        className="w-full"
-                      >
-                        <FlipHorizontal className="h-4 w-4 mr-2 rotate-90" />
-                        Mirror V
-                      </Button>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={handleDuplicate}
+                          className="p-6"
+                        >
+                          <Copy className="h-7 w-7" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleMirror('horizontal')}
+                          className="p-6"
+                        >
+                          <FlipHorizontal className="h-7 w-7" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleMirror('vertical')}
+                          className="p-6"
+                        >
+                          <FlipHorizontal className="h-7 w-7 rotate-90" />
+                        </Button>
+                      </div>
                     </div>
 
                     <div className="border-t pt-4 space-y-3">
                       <div className="space-y-2">
-                        <Label className="font-semibold">Offset</Label>
-                        <Input
-                          type="number"
-                          value={offsetValue}
-                          onChange={(e) => setOffsetValue(parseFloat(e.target.value))}
-                          step="0.1"
-                          min="0.1"
-                        />
+                        <div className="flex items-center gap-2">
+                          <ArrowRightFromLine className="h-5 w-5" />
+                          <Input
+                            type="number"
+                            value={offsetValue}
+                            onChange={(e) => setOffsetValue(parseFloat(e.target.value))}
+                            step="0.1"
+                            min="0.1"
+                          />
+                        </div>
                         <Button
                           variant="outline"
                           onClick={handleOffset}
-                          size="sm"
-                          className="w-full"
+                          className="w-full p-4"
                         >
-                          Apply Offset
+                          <ArrowRightFromLine className="h-6 w-6" />
                         </Button>
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="font-semibold">Fillet Radius (cm)</Label>
-                        <Input
-                          type="number"
-                          value={filletRadius}
-                          onChange={(e) => setFilletRadius(parseFloat(e.target.value))}
-                          step="0.1"
-                          min="0.1"
-                        />
+                        <div className="flex items-center gap-2">
+                          <CircleIcon className="h-5 w-5" />
+                          <Input
+                            type="number"
+                            value={filletRadius}
+                            onChange={(e) => setFilletRadius(parseFloat(e.target.value))}
+                            step="0.1"
+                            min="0.1"
+                          />
+                        </div>
                         <Button
                           variant="outline"
                           onClick={handleFillet}
-                          size="sm"
-                          className="w-full"
+                          className="w-full p-4"
                         >
-                          Apply Fillet
+                          <CircleIcon className="h-6 w-6" />
                         </Button>
                       </div>
                     </div>
@@ -1016,11 +1009,9 @@ export const ShapeCanvas = ({ slab, shapes: importedShapes, onUpdateShapes: onUp
                       <Button
                         variant="destructive"
                         onClick={handleDelete}
-                        size="sm"
-                        className="w-full"
+                        className="w-full p-6"
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Shape
+                        <Trash2 className="h-8 w-8" />
                       </Button>
                     </div>
                   </>
