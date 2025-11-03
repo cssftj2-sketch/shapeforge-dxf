@@ -189,9 +189,26 @@ const Index = () => {
       if (result.shapes.length > 0) {
         setShapes(result.shapes);
         setArrangedShapes([]);
+        
+        // Calculate empty space
+        const slabArea = result.slab?.type === "slab" ? result.slab.width * result.slab.height : 0;
+        const usedArea = result.shapes.reduce((total, shape) => {
+          if ('width' in shape && 'height' in shape) {
+            return total + (shape.width * shape.height);
+          } else if ('radius' in shape) {
+            return total + (Math.PI * shape.radius * shape.radius);
+          } else if ('base' in shape && 'height' in shape) {
+            return total + ((shape.base * shape.height) / 2);
+          }
+          return total;
+        }, 0);
+        const emptySpace = slabArea - usedArea;
+        const emptyPercentage = slabArea > 0 ? ((emptySpace / slabArea) * 100) : 0;
+        
         toast.success("Import successful", {
-          description: `${result.shapes.length} shapes${result.slab ? " and slab" : ""} imported`,
-          icon: <CheckCircle2 className="h-5 w-5 text-success" />
+          description: `${result.shapes.length} shapes${result.slab ? " and slab" : ""} imported • Empty space: ${emptySpace.toFixed(0)} cm² (${emptyPercentage.toFixed(1)}%)`,
+          icon: <CheckCircle2 className="h-5 w-5 text-success" />,
+          duration: 7000
         });
       } else {
         toast.warning("No shapes found in DXF file");
@@ -244,11 +261,11 @@ const Index = () => {
   return (
     <SidebarProvider defaultOpen={true}>
       <TooltipProvider>
-        <div className="min-h-screen bg-background flex w-full">
-          <div className="flex-1 p-4 md:p-6 lg:p-8">
-            <div className="max-w-[2000px] mx-auto space-y-6">
+        <div className="h-screen bg-background flex w-full overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden">
               {/* Hero Header with Clear Hierarchy */}
-              <header className="space-y-4 pb-6 border-b border-white/10">
+              <header className="space-y-4 p-4 border-b border-white/10 bg-background shrink-0">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="p-4 rounded-2xl glass-elevated animate-pulse-glow">
@@ -284,9 +301,9 @@ const Index = () => {
                 </div>
               </header>
 
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+              <div className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-4 overflow-hidden p-4">
                 {/* Left Sidebar - 30% width, secondary visual weight */}
-                <div className="xl:col-span-3 space-y-6">
+                <div className="xl:col-span-3 space-y-4 overflow-y-auto">
                   {/* Shape Form - Always visible but guided */}
                   <Card className="premium-card">
                     <CardHeader className="pb-4">
@@ -441,62 +458,58 @@ const Index = () => {
                 </div>
 
                 {/* Main Canvas - 70% width, primary visual weight */}
-                <div className="xl:col-span-9">
-                  <Card className="premium-card-elevated h-full min-h-[700px]">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-section flex items-center gap-3">
-                          <div className="h-3 w-3 rounded-full bg-primary animate-pulse-glow" />
-                          Workspace Canvas
-                        </CardTitle>
+                <div className="xl:col-span-9 flex flex-col overflow-hidden">
+                  {slab ? (
+                    <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg shadow-sm">
+                      <div className="flex items-center justify-between p-3 border-b bg-gradient-to-r from-primary/5 to-background shrink-0">
                         <div className="flex items-center gap-3">
+                          <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                          <span className="font-semibold text-foreground">Canvas</span>
                           {slab && (
-                            <div className="badge-info">
-                              <Maximize2 className="h-4 w-4" />
-                              <span>{slab.type === "slab" ? `${slab.width}×${slab.height} cm` : ""}</span>
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10 text-primary text-sm">
+                              <Maximize2 className="h-3.5 w-3.5" />
+                              <span className="font-medium">{slab.type === "slab" ? `${slab.width}×${slab.height} cm` : ""}</span>
                             </div>
                           )}
-                          <SidebarTrigger className="ml-2">
-                            <PanelRightOpen className="h-5 w-5" />
-                          </SidebarTrigger>
                         </div>
+                        <SidebarTrigger>
+                          <PanelRightOpen className="h-4 w-4" />
+                        </SidebarTrigger>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      {slab ? (
-                        <div className="canvas-container">
-                          <ShapeCanvas />
+                      <div className="flex-1 overflow-hidden">
+                        <ShapeCanvas />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center bg-white rounded-lg shadow-sm">
+                      <div className="empty-state">
+                        <div className="w-24 h-24 rounded-2xl glass-elevated animate-pulse-glow mx-auto flex items-center justify-center mb-6">
+                          <Layers className="h-12 w-12 text-primary" />
                         </div>
-                      ) : (
-                        <div className="empty-state">
-                          <div className="w-24 h-24 rounded-2xl glass-elevated animate-pulse-glow mx-auto flex items-center justify-center mb-6">
-                            <Layers className="h-12 w-12 text-primary" />
-                          </div>
-                          <div className="space-y-4 max-w-md">
-                            <h3 className="text-section">Get Started</h3>
-                            <p className="text-body text-muted-foreground">
-                              Begin by adding a slab to define your marble workspace dimensions. 
-                              Then add the shapes you need to cut and let the optimizer find the best layout.
-                            </p>
-                            <div className="flex flex-col gap-2 pt-4">
-                              <div className="flex items-center gap-3 text-caption">
-                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">1</div>
-                                <span>Add a slab (workspace dimensions)</span>
-                              </div>
-                              <div className="flex items-center gap-3 text-caption">
-                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">2</div>
-                                <span>Add shapes to cut</span>
-                              </div>
-                              <div className="flex items-center gap-3 text-caption">
-                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">3</div>
-                                <span>Click "Optimize Layout" for best arrangement</span>
-                              </div>
+                        <div className="space-y-4 max-w-md">
+                          <h3 className="text-section">Get Started</h3>
+                          <p className="text-body text-muted-foreground">
+                            Begin by adding a slab to define your marble workspace dimensions. 
+                            Then add the shapes you need to cut and let the optimizer find the best layout.
+                          </p>
+                          <div className="flex flex-col gap-2 pt-4">
+                            <div className="flex items-center gap-3 text-caption">
+                              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">1</div>
+                              <span>Add a slab (workspace dimensions)</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-caption">
+                              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">2</div>
+                              <span>Add shapes to cut</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-caption">
+                              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">3</div>
+                              <span>Click "Optimize Layout" for best arrangement</span>
                             </div>
                           </div>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

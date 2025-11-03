@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Rect, Line, Transformer } from 'react-konva';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shape, ShapeType, ToolMode } from '@/types/shapes';
 import { GRID_SIZE } from '@/constants/canvas';
 import { snapToGrid, createShapeFromDrag } from '@/utils/geometry';
@@ -249,7 +248,7 @@ export default function ShapeCanvas() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
       {/* Horizontal Toolbar */}
       <HorizontalToolbar
         toolMode={toolMode}
@@ -267,88 +266,74 @@ export default function ShapeCanvas() {
       {/* Main Content Area */}
       <div className="flex-1 flex relative overflow-hidden">
         {/* Canvas */}
-        <div className="flex-1 overflow-auto p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Canvas ({slabWidth}cm × {slabHeight}cm)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-lg overflow-auto bg-gray-50">
-                <Stage
-                  ref={stageRef}
-                  width={slabWidth * GRID_SIZE}
-                  height={slabHeight * GRID_SIZE}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                >
-                  <Layer>
-                    {/* Grid */}
-                    {Array.from({ length: slabWidth }).map((_, i) => (
-                      <Line
-                        key={`v-${i}`}
-                        points={[i * GRID_SIZE, 0, i * GRID_SIZE, slabHeight * GRID_SIZE]}
-                        stroke="#e5e7eb"
-                        strokeWidth={0.5}
-                      />
-                    ))}
-                    {Array.from({ length: slabHeight }).map((_, i) => (
-                      <Line
-                        key={`h-${i}`}
-                        points={[0, i * GRID_SIZE, slabWidth * GRID_SIZE, i * GRID_SIZE]}
-                        stroke="#e5e7eb"
-                        strokeWidth={0.5}
-                      />
-                    ))}
-
-                    {/* Slab Border */}
-                    <Rect
-                      x={0}
-                      y={0}
-                      width={slabWidth * GRID_SIZE}
-                      height={slabHeight * GRID_SIZE}
-                      stroke="#374151"
-                      strokeWidth={3}
+        <div className="flex-1 overflow-auto p-4">
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="border rounded-lg overflow-auto bg-white shadow-sm">
+              <Stage
+                ref={stageRef}
+                width={slabWidth * GRID_SIZE}
+                height={slabHeight * GRID_SIZE}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+              >
+                <Layer>
+                  {/* Grid */}
+                  {Array.from({ length: slabWidth }).map((_, i) => (
+                    <Line
+                      key={`v-${i}`}
+                      points={[i * GRID_SIZE, 0, i * GRID_SIZE, slabHeight * GRID_SIZE]}
+                      stroke="#e5e7eb"
+                      strokeWidth={0.5}
                     />
-
-                    {/* Shapes */}
-                    {shapes.map(shape => (
-                      <ShapeRenderer
-                        key={shape.id}
-                        shape={shape}
-                        isSelected={shape.id === selectedId}
-                        toolMode={toolMode}
-                        onSelect={handleShapeClick}
-                        onTransform={updateShape}
-                        shapeRef={(node) => { shapeRefs.current[shape.id] = node; }}
-                      />
-                    ))}
-
-                    {/* Transformer */}
-                    <Transformer
-                      ref={transformerRef}
-                      boundBoxFunc={(oldBox, newBox) => {
-                        if (newBox.width < 5 || newBox.height < 5) {
-                          return oldBox;
-                        }
-                        return newBox;
-                      }}
+                  ))}
+                  {Array.from({ length: slabHeight }).map((_, i) => (
+                    <Line
+                      key={`h-${i}`}
+                      points={[0, i * GRID_SIZE, slabWidth * GRID_SIZE, i * GRID_SIZE]}
+                      stroke="#e5e7eb"
+                      strokeWidth={0.5}
                     />
-                  </Layer>
-                </Stage>
-              </div>
+                  ))}
 
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg space-y-2">
-                <div className="text-sm font-semibold text-blue-900">
-                  {getToolModeMessage()}
-                </div>
-                <div className="text-xs text-blue-700">
-                  Shapes created: <span className="font-bold">{shapes.length}</span>
-                  {selectedId && selectedShape && ` • Selected: ${selectedShape.type}`}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  {/* Slab Border */}
+                  <Rect
+                    x={0}
+                    y={0}
+                    width={slabWidth * GRID_SIZE}
+                    height={slabHeight * GRID_SIZE}
+                    stroke="#374151"
+                    strokeWidth={3}
+                  />
+
+                  {/* Shapes */}
+                  {shapes.map(shape => (
+                    <ShapeRenderer
+                      key={shape.id}
+                      shape={shape}
+                      isSelected={shape.id === selectedId}
+                      toolMode={toolMode}
+                      onSelect={handleShapeClick}
+                      onTransform={updateShape}
+                      shapeRef={(node) => { shapeRefs.current[shape.id] = node; }}
+                      onMeasurementEdit={updateShapeMeasurement}
+                    />
+                  ))}
+
+                  {/* Transformer */}
+                  <Transformer
+                    ref={transformerRef}
+                    boundBoxFunc={(oldBox, newBox) => {
+                      if (newBox.width < 5 || newBox.height < 5) {
+                        return oldBox;
+                      }
+                      return newBox;
+                    }}
+                  />
+                </Layer>
+              </Stage>
+            </div>
+          </div>
         </div>
 
         {/* Collapsible Properties Sidebar */}

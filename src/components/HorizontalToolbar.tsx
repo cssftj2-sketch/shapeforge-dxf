@@ -2,9 +2,9 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Square, Move, Trash2, Scissors, Copy, FlipHorizontal, FlipVertical, Edit3, 
-  Minus, PenTool, Circle, Triangle, 
+  Minus, PenTool, CircleDot, Triangle as TriangleIcon, 
   CornerUpLeft, Smile, ArrowRightFromLine, Undo2, Redo2, RectangleHorizontal,
-  ChevronRight
+  ChevronRight, Pointer
 } from 'lucide-react';
 import { ShapeType, ToolMode } from '../types/shapes';
 
@@ -133,7 +133,7 @@ export const HorizontalToolbar: React.FC<HorizontalToolbarProps> = ({
               aria-label={`Select Mode (${KEYBOARD_SHORTCUTS.select})`}
               aria-pressed={toolMode === 'select'}
             >
-              <Move className="h-4 w-4" />
+              <Pointer className="h-4 w-4" />
             </Button>
             <Button
               variant={toolMode === 'draw' ? 'default' : 'outline'}
@@ -204,7 +204,7 @@ export const HorizontalToolbar: React.FC<HorizontalToolbarProps> = ({
                 aria-label={`Circle (${KEYBOARD_SHORTCUTS.circle})`}
                 aria-pressed={selectedTool === 'circle'}
               >
-                <Circle className="h-4 w-4" />
+                <CircleDot className="h-4 w-4" />
               </Button>
               <Button
                 variant={selectedTool === 'rectangle' ? 'default' : 'outline'}
@@ -226,7 +226,7 @@ export const HorizontalToolbar: React.FC<HorizontalToolbarProps> = ({
                 aria-label={`Triangle (${KEYBOARD_SHORTCUTS.triangle})`}
                 aria-pressed={selectedTool === 'triangle'}
               >
-                <Triangle className="h-4 w-4" />
+                <TriangleIcon className="h-4 w-4" />
               </Button>
               <Button
                 variant={selectedTool === 'l-shape-tl' ? 'default' : 'outline'}

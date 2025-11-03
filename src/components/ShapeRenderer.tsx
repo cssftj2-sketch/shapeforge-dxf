@@ -11,6 +11,7 @@ interface ShapeRendererProps {
   onSelect: (id: string) => void;
   onTransform: (id: string, updates: Partial<Shape>) => void;
   shapeRef: (node: any) => void;
+  onMeasurementEdit?: (field: string, value: number) => void;
 }
 
 export const ShapeRenderer: React.FC<ShapeRendererProps> = ({ 
@@ -19,11 +20,14 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
   toolMode, 
   onSelect, 
   onTransform,
-  shapeRef 
+  shapeRef,
+  onMeasurementEdit
 }) => {
   const scale = GRID_SIZE;
   const isDraggable = toolMode === 'select';
   const strokeWidth = isSelected ? 3 : 2;
+  const measurementColor = isSelected ? '#3b82f6' : '#6b7280';
+  const measurementBg = isSelected ? '#dbeafe' : '#f3f4f6';
 
   const handleDragEnd = (e: any) => {
     onTransform(shape.id, {
@@ -32,17 +36,49 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
     });
   };
 
+  const renderMeasurementLabel = (x: number, y: number, text: string, rotation: number = 0) => (
+    <>
+      <Rect
+        x={x - 30}
+        y={y - 10}
+        width={60}
+        height={20}
+        fill={measurementBg}
+        cornerRadius={4}
+        opacity={0.9}
+        listening={false}
+      />
+      <Text
+        x={x - 30}
+        y={y - 6}
+        width={60}
+        text={text}
+        fontSize={11}
+        fontStyle="bold"
+        fill={measurementColor}
+        align="center"
+        listening={false}
+        rotation={rotation}
+      />
+    </>
+  );
+
   switch (shape.type) {
     case 'rectangle':
+      const rectX = shape.x * scale;
+      const rectY = shape.y * scale;
+      const rectW = shape.width! * scale;
+      const rectH = shape.height! * scale;
+      
       return (
         <Group key={shape.id}>
           <Rect
             ref={shapeRef}
             id={shape.id}
-            x={shape.x * scale}
-            y={shape.y * scale}
-            width={shape.width! * scale}
-            height={shape.height! * scale}
+            x={rectX}
+            y={rectY}
+            width={rectW}
+            height={rectH}
             fill={shape.fill}
             stroke={shape.stroke}
             strokeWidth={strokeWidth}
@@ -62,26 +98,27 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
               node.scaleY(1);
             }}
           />
-          <Text
-            x={shape.x * scale}
-            y={shape.y * scale - 20}
-            text={`${shape.width?.toFixed(1)}×${shape.height?.toFixed(1)} cm`}
-            fontSize={12}
-            fill="#333"
-            listening={false}
-          />
+          {/* Measurement labels on all sides */}
+          {renderMeasurementLabel(rectX + rectW / 2, rectY - 20, `${shape.width?.toFixed(1)} cm`)}
+          {renderMeasurementLabel(rectX + rectW / 2, rectY + rectH + 20, `${shape.width?.toFixed(1)} cm`)}
+          {renderMeasurementLabel(rectX - 35, rectY + rectH / 2, `${shape.height?.toFixed(1)} cm`, -90)}
+          {renderMeasurementLabel(rectX + rectW + 35, rectY + rectH / 2, `${shape.height?.toFixed(1)} cm`, 90)}
         </Group>
       );
 
     case 'circle':
+      const circleX = (shape.x + shape.radius!) * scale;
+      const circleY = (shape.y + shape.radius!) * scale;
+      const radius = shape.radius! * scale;
+      
       return (
         <Group key={shape.id}>
           <Circle
             ref={shapeRef}
             id={shape.id}
-            x={(shape.x + shape.radius!) * scale}
-            y={(shape.y + shape.radius!) * scale}
-            radius={shape.radius! * scale}
+            x={circleX}
+            y={circleY}
+            radius={radius}
             fill={shape.fill}
             stroke={shape.stroke}
             strokeWidth={strokeWidth}
@@ -106,29 +143,30 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
               node.scaleY(1);
             }}
           />
-          <Text
-            x={shape.x * scale}
-            y={(shape.y - 2) * scale}
-            text={`R: ${shape.radius?.toFixed(1)} cm`}
-            fontSize={12}
-            fill="#333"
-            listening={false}
-          />
+          {/* Radius label */}
+          {renderMeasurementLabel(circleX, circleY - radius - 25, `R: ${shape.radius?.toFixed(1)} cm`)}
+          {/* Diameter label */}
+          {renderMeasurementLabel(circleX, circleY + radius + 25, `Ø: ${(shape.radius! * 2).toFixed(1)} cm`)}
         </Group>
       );
 
     case 'triangle':
+      const triX = shape.x * scale;
+      const triY = shape.y * scale;
+      const triBase = shape.base! * scale;
+      const triHeight = shape.height! * scale;
+      
       return (
         <Group key={shape.id}>
           <Line
             ref={shapeRef}
             id={shape.id}
-            x={shape.x * scale}
-            y={shape.y * scale}
+            x={triX}
+            y={triY}
             points={[
-              (shape.base! * scale) / 2, 0,
-              shape.base! * scale, shape.height! * scale,
-              0, shape.height! * scale
+              triBase / 2, 0,
+              triBase, triHeight,
+              0, triHeight
             ]}
             closed
             fill={shape.fill}
@@ -139,26 +177,25 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
             onTap={() => onSelect(shape.id)}
             onDragEnd={handleDragEnd}
           />
-          <Text
-            x={shape.x * scale}
-            y={shape.y * scale - 20}
-            text={`B:${shape.base?.toFixed(1)} H:${shape.height?.toFixed(1)} cm`}
-            fontSize={12}
-            fill="#333"
-            listening={false}
-          />
+          {/* Base measurement */}
+          {renderMeasurementLabel(triX + triBase / 2, triY + triHeight + 25, `B: ${shape.base?.toFixed(1)} cm`)}
+          {/* Height measurement */}
+          {renderMeasurementLabel(triX - 35, triY + triHeight / 2, `H: ${shape.height?.toFixed(1)} cm`, -90)}
         </Group>
       );
 
     case 'line':
       const linePoints = shape.points || [0, 0, 10, 10];
+      const lineX = shape.x * scale;
+      const lineY = shape.y * scale;
+      
       return (
         <Group key={shape.id}>
           <Line
             ref={shapeRef}
             id={shape.id}
-            x={shape.x * scale}
-            y={shape.y * scale}
+            x={lineX}
+            y={lineY}
             points={linePoints.map(p => p * scale)}
             stroke={shape.stroke}
             strokeWidth={strokeWidth}
@@ -170,8 +207,8 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
           {toolMode === 'edit-nodes' && isSelected && linePoints.length >= 2 && (
             <>
               <Circle
-                x={shape.x * scale}
-                y={shape.y * scale}
+                x={lineX}
+                y={lineY}
                 radius={5}
                 fill="white"
                 stroke="blue"
@@ -179,14 +216,14 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
                 draggable
                 onDragMove={(e) => {
                   const newPoints = [...linePoints];
-                  newPoints[0] = (e.target.x() - shape.x * scale) / scale;
-                  newPoints[1] = (e.target.y() - shape.y * scale) / scale;
+                  newPoints[0] = (e.target.x() - lineX) / scale;
+                  newPoints[1] = (e.target.y() - lineY) / scale;
                   onTransform(shape.id, { points: newPoints });
                 }}
               />
               <Circle
-                x={shape.x * scale + linePoints[2] * scale}
-                y={shape.y * scale + linePoints[3] * scale}
+                x={lineX + linePoints[2] * scale}
+                y={lineY + linePoints[3] * scale}
                 radius={5}
                 fill="white"
                 stroke="blue"
@@ -194,24 +231,40 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
                 draggable
                 onDragMove={(e) => {
                   const newPoints = [...linePoints];
-                  newPoints[2] = (e.target.x() - shape.x * scale) / scale;
-                  newPoints[3] = (e.target.y() - shape.y * scale) / scale;
+                  newPoints[2] = (e.target.x() - lineX) / scale;
+                  newPoints[3] = (e.target.y() - lineY) / scale;
                   onTransform(shape.id, { points: newPoints });
                 }}
               />
+            </>
+          )}
+          {/* Line length measurement */}
+          {linePoints.length >= 4 && (
+            <>
+              {(() => {
+                const dx = linePoints[2] - linePoints[0];
+                const dy = linePoints[3] - linePoints[1];
+                const length = Math.sqrt(dx * dx + dy * dy);
+                const midX = lineX + ((linePoints[0] + linePoints[2]) / 2) * scale;
+                const midY = lineY + ((linePoints[1] + linePoints[3]) / 2) * scale;
+                return renderMeasurementLabel(midX, midY - 20, `${length.toFixed(1)} cm`);
+              })()}
             </>
           )}
         </Group>
       );
 
     case 'arc':
+      const arcX = shape.x * scale;
+      const arcY = shape.y * scale;
+      
       return (
         <Group key={shape.id}>
           <Arc
             ref={shapeRef}
             id={shape.id}
-            x={shape.x * scale}
-            y={shape.y * scale}
+            x={arcX}
+            y={arcY}
             innerRadius={shape.innerRadius! * scale}
             outerRadius={shape.outerRadius! * scale}
             angle={shape.angle || 90}
@@ -222,11 +275,16 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
             onTap={() => onSelect(shape.id)}
             onDragEnd={handleDragEnd}
           />
+          {/* Arc measurements */}
+          {renderMeasurementLabel(arcX, arcY - shape.outerRadius! * scale - 25, `R: ${shape.outerRadius?.toFixed(1)} cm`)}
+          {renderMeasurementLabel(arcX, arcY + shape.outerRadius! * scale + 25, `${shape.angle}°`)}
         </Group>
       );
 
     default:
       if (shape.type.startsWith('l-shape-') && 'legWidth' in shape && 'legHeight' in shape) {
+        const lX = shape.x * scale;
+        const lY = shape.y * scale;
         const w = shape.width * scale;
         const h = shape.height * scale;
         const lw = shape.legWidth * scale;
@@ -238,8 +296,8 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
             <Line
               ref={shapeRef}
               id={shape.id}
-              x={shape.x * scale}
-              y={shape.y * scale}
+              x={lX}
+              y={lY}
               points={lPoints}
               closed
               fill={shape.fill}
@@ -250,14 +308,10 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
               onTap={() => onSelect(shape.id)}
               onDragEnd={handleDragEnd}
             />
-            <Text
-              x={shape.x * scale}
-              y={shape.y * scale - 20}
-              text={`${shape.width?.toFixed(1)}×${shape.height?.toFixed(1)} cm`}
-              fontSize={12}
-              fill="#333"
-              listening={false}
-            />
+            {/* L-Shape measurements */}
+            {renderMeasurementLabel(lX + w / 2, lY - 20, `${shape.width?.toFixed(1)} cm`)}
+            {renderMeasurementLabel(lX - 35, lY + h / 2, `${shape.height?.toFixed(1)} cm`, -90)}
+            {renderMeasurementLabel(lX + lw / 2, lY + h + 20, `Leg: ${shape.legWidth?.toFixed(1)}×${shape.legHeight?.toFixed(1)} cm`)}
           </Group>
         );
       }
