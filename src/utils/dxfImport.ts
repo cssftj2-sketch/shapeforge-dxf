@@ -106,7 +106,25 @@ export const importFromDXF = (fileContent: string): { shapes: Shape[]; slab: Sha
   });
 
   console.log("Imported shapes:", shapes.length);
-  console.log("Shapes:", shapes);
+  console.log("Shapes before normalization:", shapes);
+
+  // Normalize shape positions to fit within the slab
+  if (shapes.length > 0 && slab) {
+    // Find the minimum X and Y to offset all shapes
+    const minShapeX = Math.min(...shapes.map(s => s.x));
+    const minShapeY = Math.min(...shapes.map(s => s.y));
+    
+    console.log("Min shape position:", { minShapeX, minShapeY });
+    
+    // Offset all shapes to start near the origin with a margin
+    const margin = 1; // 1cm margin
+    shapes.forEach(shape => {
+      shape.x = shape.x - minShapeX + margin;
+      shape.y = shape.y - minShapeY + margin;
+    });
+    
+    console.log("Shapes after normalization:", shapes);
+  }
 
   return { shapes, slab };
 };
