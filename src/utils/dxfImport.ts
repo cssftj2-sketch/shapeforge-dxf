@@ -13,6 +13,8 @@ export const importFromDXF = (fileContent: string): { shapes: Shape[]; slab: Sha
     throw new Error("Invalid DXF file");
   }
 
+  console.log("DXF entities found:", dxf.entities.length);
+
   // Process entities
   dxf.entities.forEach((entity: any) => {
     try {
@@ -35,8 +37,11 @@ export const importFromDXF = (fileContent: string): { shapes: Shape[]; slab: Sha
         const width = maxX - minX;
         const height = maxY - minY;
 
-        // Detect if it's a slab (largest rectangle at origin)
-        if (Math.abs(minX) < 1 && Math.abs(minY) < 1 && width > 50 && height > 50 && !slab) {
+        // Check layer to determine if it's a slab
+        const isSlab = entity.layer === "Slab" || entity.layer === "SLAB";
+
+        // Detect if it's a slab (largest rectangle or on slab layer)
+        if ((isSlab || (Math.abs(minX) < 1 && Math.abs(minY) < 1 && width > 50 && height > 50)) && !slab) {
           slab = {
             id: `slab-imported`,
             type: "slab",
@@ -45,8 +50,9 @@ export const importFromDXF = (fileContent: string): { shapes: Shape[]; slab: Sha
             x: 0,
             y: 0
           };
-        } else if (vertices.length === 5) {
-          // Rectangle
+          console.log("Slab detected:", slab);
+        } else if (vertices.length === 5 && !isSlab) {
+          // Rectangle (5 vertices including closing point)
           shapes.push({
             id: `shape-${Date.now()}-${shapeCounter++}`,
             type: "rectangle",
@@ -55,9 +61,9 @@ export const importFromDXF = (fileContent: string): { shapes: Shape[]; slab: Sha
             x: Math.round(minX * 10) / 10,
             y: Math.round(minY * 10) / 10
           });
-        } else if (vertices.length === 7) {
-          // Potentially an L-shape
-          // For simplicity, import as rectangle for now
+        } else if (vertices.length === 7 && !isSlab) {
+          // Potentially an L-shape - try to detect which type
+          // For now, import as rectangle
           shapes.push({
             id: `shape-${Date.now()}-${shapeCounter++}`,
             type: "rectangle",
@@ -66,8 +72,8 @@ export const importFromDXF = (fileContent: string): { shapes: Shape[]; slab: Sha
             x: Math.round(minX * 10) / 10,
             y: Math.round(minY * 10) / 10
           });
-        } else if (vertices.length === 4) {
-          // Triangle
+        } else if (vertices.length === 4 && !isSlab) {
+          // Triangle (4 vertices including closing point)
           shapes.push({
             id: `shape-${Date.now()}-${shapeCounter++}`,
             type: "triangle",
@@ -79,18 +85,28 @@ export const importFromDXF = (fileContent: string): { shapes: Shape[]; slab: Sha
         }
       } else if (entity.type === "CIRCLE") {
         const radius = (entity.radius || 0) / 10; // Convert mm to cm
+        const centerX = (entity.center?.x || 0) / 10;
+        const centerY = (entity.center?.y || 0) / 10;
+        
+        // Calculate top-left position from center
+        const x = centerX - radius;
+        const y = centerY - radius;
+        
         shapes.push({
           id: `shape-${Date.now()}-${shapeCounter++}`,
           type: "circle",
           radius: Math.round(radius * 10) / 10,
-          x: Math.round((entity.center?.x || 0) / 10 * 10) / 10,
-          y: Math.round((entity.center?.y || 0) / 10 * 10) / 10
+          x: Math.round(x * 10) / 10,
+          y: Math.round(y * 10) / 10
         });
       }
     } catch (error) {
       console.error("Error processing entity:", error);
     }
   });
+
+  console.log("Imported shapes:", shapes.length);
+  console.log("Shapes:", shapes);
 
   return { shapes, slab };
 };
