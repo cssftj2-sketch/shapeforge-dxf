@@ -8,8 +8,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { 
+  Sidebar, 
+  SidebarContent, 
+  SidebarGroup, 
+  SidebarGroupContent, 
+  SidebarGroupLabel,
+  SidebarProvider,
+  SidebarTrigger
+} from "@/components/ui/sidebar";
 import { arrangeShapes } from "@/utils/shapeArrangement";
 import { optimizeNesting } from "@/utils/optimizedNesting";
 import { downloadDXF } from "@/utils/dxfExport";
@@ -18,7 +26,7 @@ import { handleDXFUpload } from "@/utils/dxfImport";
 import { 
   Download, Layout, Upload, Sparkles, Scissors, Layers, 
   Plus, AlertCircle, CheckCircle2, TrendingUp, FileText,
-  Maximize2, HelpCircle, Zap, BarChart3
+  Maximize2, HelpCircle, Zap, BarChart3, PanelRightOpen
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -234,352 +242,367 @@ const Index = () => {
   const hasArrangement = arrangedShapes.length > 0;
 
   return (
-    <TooltipProvider>
-      <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-        <div className="max-w-[2000px] mx-auto space-y-6">
-          {/* Hero Header with Clear Hierarchy */}
-          <header className="space-y-4 pb-6 border-b border-white/10">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="p-4 rounded-2xl glass-elevated animate-pulse-glow">
-                  <Scissors className="h-10 w-10 text-primary" />
-                </div>
-                <div>
-                  <h1 className="text-hero bg-gradient-to-r from-primary via-blue-400 to-primary bg-clip-text text-transparent">
-                    Marble Cut Nesting
-                  </h1>
-                  <p className="text-body text-muted-foreground mt-2">
-                    Professional optimization for precision marble cutting • Save material, reduce waste
-                  </p>
-                </div>
-              </div>
-              
-              {/* Quick Stats */}
-              {hasSlab && (
-                <div className="flex gap-3">
-                  <div className="metric-display min-w-[100px]">
-                    <div className="metric-value text-primary">{shapes.length}</div>
-                    <div className="metric-label">Shapes</div>
+    <SidebarProvider defaultOpen={true}>
+      <TooltipProvider>
+        <div className="min-h-screen bg-background flex w-full">
+          <div className="flex-1 p-4 md:p-6 lg:p-8">
+            <div className="max-w-[2000px] mx-auto space-y-6">
+              {/* Hero Header with Clear Hierarchy */}
+              <header className="space-y-4 pb-6 border-b border-white/10">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="p-4 rounded-2xl glass-elevated animate-pulse-glow">
+                      <Scissors className="h-10 w-10 text-primary" />
+                    </div>
+                    <div>
+                      <h1 className="text-hero bg-gradient-to-r from-primary via-blue-400 to-primary bg-clip-text text-transparent">
+                        Marble Cut Nesting
+                      </h1>
+                      <p className="text-body text-muted-foreground mt-2">
+                        Professional optimization for precision marble cutting • Save material, reduce waste
+                      </p>
+                    </div>
                   </div>
-                  {efficiency !== null && (
-                    <div className="metric-display min-w-[120px]">
-                      <div className={`metric-value ${efficiency > 70 ? 'text-success' : efficiency > 50 ? 'text-warning' : 'text-destructive'}`}>
-                        {efficiency.toFixed(1)}%
+                  
+                  {/* Quick Stats */}
+                  {hasSlab && (
+                    <div className="flex gap-3">
+                      <div className="metric-display min-w-[100px]">
+                        <div className="metric-value text-primary">{shapes.length}</div>
+                        <div className="metric-label">Shapes</div>
                       </div>
-                      <div className="metric-label">Efficiency</div>
+                      {efficiency !== null && (
+                        <div className="metric-display min-w-[120px]">
+                          <div className={`metric-value ${efficiency > 70 ? 'text-success' : efficiency > 50 ? 'text-warning' : 'text-destructive'}`}>
+                            {efficiency.toFixed(1)}%
+                          </div>
+                          <div className="metric-label">Efficiency</div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-          </header>
+              </header>
 
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            {/* Left Sidebar - 30% width, secondary visual weight */}
-            <div className="xl:col-span-3 space-y-6">
-              {/* Shape Form - Always visible but guided */}
-              <Card className="premium-card">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-subsection flex items-center gap-2">
-                      <Plus className="h-5 w-5 text-primary" />
-                      Add Shapes
-                    </CardTitle>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent className="tooltip max-w-xs">
-                        <p>Start by adding a slab to define your workspace, then add shapes to arrange</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ShapeForm 
-                    onAddShape={handleAddShape} 
-                    editingShape={editingShape}
-                    onCancelEdit={handleCancelEdit}
-                  />
-                </CardContent>
-              </Card>
-              
-              {/* Optimization Panel - Progressive disclosure */}
-              {hasSlab && hasShapes && (
-                <Card className="premium-card-elevated border-primary/30">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-subsection">Optimization</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                {/* Left Sidebar - 30% width, secondary visual weight */}
+                <div className="xl:col-span-3 space-y-6">
+                  {/* Shape Form - Always visible but guided */}
+                  <Card className="premium-card">
+                    <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="spacing" className="text-body font-semibold flex items-center gap-2">
-                          Spacing
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent className="tooltip">
-                              <p>Minimum distance between shapes (cm)</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </Label>
-                        <span className="text-caption">{spacing} cm</span>
+                        <CardTitle className="text-subsection flex items-center gap-2">
+                          <Plus className="h-5 w-5 text-primary" />
+                          Add Shapes
+                        </CardTitle>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent className="tooltip max-w-xs">
+                            <p>Start by adding a slab to define your workspace, then add shapes to arrange</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
-                      <Input
-                        id="spacing"
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="10"
-                        value={spacing}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (val >= 0 && val <= 10) {
-                            setSpacing(val);
-                          } else {
-                            toast.error("Invalid spacing", {
-                              description: "Spacing must be between 0 and 10 cm"
-                            });
-                          }
-                        }}
-                        className="glass-card"
+                    </CardHeader>
+                    <CardContent>
+                      <ShapeForm 
+                        onAddShape={handleAddShape} 
+                        editingShape={editingShape}
+                        onCancelEdit={handleCancelEdit}
                       />
-                    </div>
-                    
-                    {/* Primary CTA - Optimize Button */}
-                    <div className="space-y-3 pt-2">
-                      <Button 
-                        onClick={handleOptimize} 
-                        disabled={isOptimizing}
-                        className="w-full btn-primary h-12 text-base"
-                        size="lg"
-                      >
-                        {isOptimizing ? (
-                          <>
-                            <Sparkles className="mr-2 h-5 w-5 animate-spin" />
-                            Optimizing...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="mr-2 h-5 w-5" />
-                            Optimize Layout
-                          </>
-                        )}
-                      </Button>
-                      
-                      <Button 
-                        onClick={handleArrange} 
-                        disabled={isOptimizing}
-                        variant="outline"
-                        className="w-full glass-panel h-10"
-                      >
-                        <Layout className="mr-2 h-4 w-4" />
-                        Quick Arrange
-                      </Button>
-                    </div>
-                    
-                    {isOptimizing && (
-                      <div className="space-y-2 p-4 rounded-lg state-info">
-                        <div className="flex justify-between text-sm font-medium">
-                          <span>Finding optimal layout...</span>
-                          <span>{optimizationProgress.toFixed(0)}%</span>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Optimization Panel - Progressive disclosure */}
+                  {hasSlab && hasShapes && (
+                    <Card className="premium-card-elevated border-primary/30">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-5 w-5 text-primary" />
+                          <CardTitle className="text-subsection">Optimization</CardTitle>
                         </div>
-                        <div className="progress-bar h-2.5">
-                          <div 
-                            className="progress-fill-primary transition-all duration-300"
-                            style={{ width: `${optimizationProgress}%` }}
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="spacing" className="text-body font-semibold flex items-center gap-2">
+                              Spacing
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent className="tooltip">
+                                  <p>Minimum distance between shapes (cm)</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </Label>
+                            <span className="text-caption">{spacing} cm</span>
+                          </div>
+                          <Input
+                            id="spacing"
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="10"
+                            value={spacing}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value);
+                              if (val >= 0 && val <= 10) {
+                                setSpacing(val);
+                              } else {
+                                toast.error("Invalid spacing", {
+                                  description: "Spacing must be between 0 and 10 cm"
+                                });
+                              }
+                            }}
+                            className="glass-card"
                           />
                         </div>
-                      </div>
-                    )}
-                    
-                    {/* Results Metrics */}
-                    {efficiency !== null && !isOptimizing && (
-                      <div className="space-y-3 pt-2">
-                        <div className={`p-4 rounded-lg ${efficiency > 70 ? 'state-success' : efficiency > 50 ? 'state-warning' : 'state-error'}`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-semibold">Material Efficiency</span>
-                            <BarChart3 className="h-4 w-4" />
-                          </div>
-                          <div className="text-3xl font-bold mb-1">{efficiency.toFixed(1)}%</div>
-                          <div className="text-micro">
-                            {arrangedShapes.length} of {shapes.length} shapes placed
-                          </div>
+                        
+                        <div className="space-y-3 pt-2">
+                          <Button 
+                            onClick={handleOptimize} 
+                            disabled={isOptimizing}
+                            className="w-full btn-primary h-12 text-base"
+                            size="lg"
+                          >
+                            {isOptimizing ? (
+                              <>
+                                <Sparkles className="mr-2 h-5 w-5 animate-spin" />
+                                Optimizing...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="mr-2 h-5 w-5" />
+                                Optimize Layout
+                              </>
+                            )}
+                          </Button>
+                          
+                          <Button 
+                            onClick={handleArrange} 
+                            disabled={isOptimizing}
+                            variant="outline"
+                            className="w-full glass-panel h-10"
+                          >
+                            <Layout className="mr-2 h-4 w-4" />
+                            Quick Arrange
+                          </Button>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="metric-display">
-                            <div className="metric-value text-success text-xl">
-                              {usedArea.toFixed(0)}
+                        {isOptimizing && (
+                          <div className="space-y-2 p-4 rounded-lg state-info">
+                            <div className="flex justify-between text-sm font-medium">
+                              <span>Finding optimal layout...</span>
+                              <span>{optimizationProgress.toFixed(0)}%</span>
                             </div>
-                            <div className="metric-label">Used cm²</div>
-                          </div>
-                          <div className="metric-display">
-                            <div className="metric-value text-destructive text-xl">
-                              {wasteArea.toFixed(0)}
+                            <div className="progress-bar h-2.5">
+                              <div 
+                                className="progress-fill-primary transition-all duration-300"
+                                style={{ width: `${optimizationProgress}%` }}
+                              />
                             </div>
-                            <div className="metric-label">Waste cm²</div>
                           </div>
+                        )}
+                        
+                        {efficiency !== null && !isOptimizing && (
+                          <div className="space-y-3 pt-2">
+                            <div className={`p-4 rounded-lg ${efficiency > 70 ? 'state-success' : efficiency > 50 ? 'state-warning' : 'state-error'}`}>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-semibold">Material Efficiency</span>
+                                <BarChart3 className="h-4 w-4" />
+                              </div>
+                              <div className="text-3xl font-bold mb-1">{efficiency.toFixed(1)}%</div>
+                              <div className="text-micro">
+                                {arrangedShapes.length} of {shapes.length} shapes placed
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="metric-display">
+                                <div className="metric-value text-success text-xl">
+                                  {usedArea.toFixed(0)}
+                                </div>
+                                <div className="metric-label">Used cm²</div>
+                              </div>
+                              <div className="metric-display">
+                                <div className="metric-value text-destructive text-xl">
+                                  {wasteArea.toFixed(0)}
+                                </div>
+                                <div className="metric-label">Waste cm²</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+
+                {/* Main Canvas - 70% width, primary visual weight */}
+                <div className="xl:col-span-9">
+                  <Card className="premium-card-elevated h-full min-h-[700px]">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-section flex items-center gap-3">
+                          <div className="h-3 w-3 rounded-full bg-primary animate-pulse-glow" />
+                          Workspace Canvas
+                        </CardTitle>
+                        <div className="flex items-center gap-3">
+                          {slab && (
+                            <div className="badge-info">
+                              <Maximize2 className="h-4 w-4" />
+                              <span>{slab.type === "slab" ? `${slab.width}×${slab.height} cm` : ""}</span>
+                            </div>
+                          )}
+                          <SidebarTrigger className="ml-2">
+                            <PanelRightOpen className="h-5 w-5" />
+                          </SidebarTrigger>
                         </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+                    </CardHeader>
+                    <CardContent>
+                      {slab ? (
+                        <div className="canvas-container">
+                          <ShapeCanvas />
+                        </div>
+                      ) : (
+                        <div className="empty-state">
+                          <div className="w-24 h-24 rounded-2xl glass-elevated animate-pulse-glow mx-auto flex items-center justify-center mb-6">
+                            <Layers className="h-12 w-12 text-primary" />
+                          </div>
+                          <div className="space-y-4 max-w-md">
+                            <h3 className="text-section">Get Started</h3>
+                            <p className="text-body text-muted-foreground">
+                              Begin by adding a slab to define your marble workspace dimensions. 
+                              Then add the shapes you need to cut and let the optimizer find the best layout.
+                            </p>
+                            <div className="flex flex-col gap-2 pt-4">
+                              <div className="flex items-center gap-3 text-caption">
+                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">1</div>
+                                <span>Add a slab (workspace dimensions)</span>
+                              </div>
+                              <div className="flex items-center gap-3 text-caption">
+                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">2</div>
+                                <span>Add shapes to cut</span>
+                              </div>
+                              <div className="flex items-center gap-3 text-caption">
+                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">3</div>
+                                <span>Click "Optimize Layout" for best arrangement</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          </div>
 
-              {/* Export Panel - Only when there's something to export */}
-              {hasArrangement && (
-                <Card className="premium-card border-success/30">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-success" />
-                      <CardTitle className="text-subsection">Export</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-3 rounded-lg glass-panel">
-                      <Label htmlFor="include-slab" className="text-body font-medium">
-                        Include Slab Border
-                      </Label>
-                      <Switch
-                        id="include-slab"
-                        checked={includeSlab}
-                        onCheckedChange={setIncludeSlab}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
+          {/* Right Sidebar - Collapsible */}
+          <Sidebar side="right" className="border-l">
+            <SidebarContent>
+              <SidebarGroup>
+                <SidebarGroupLabel className="text-lg font-semibold px-4 py-3">
+                  <Layers className="h-5 w-5 inline mr-2" />
+                  القائمة
+                </SidebarGroupLabel>
+                <SidebarGroupContent className="px-4 space-y-4">
+                  {/* Export Panel */}
+                  {hasArrangement && (
+                    <Card className="premium-card border-success/30">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-success" />
+                          <CardTitle className="text-subsection">Export</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center justify-between mb-3">
+                          <Label className="text-caption">Include Slab</Label>
+                          <Switch
+                            checked={includeSlab}
+                            onCheckedChange={setIncludeSlab}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Button 
+                            onClick={handleExport} 
+                            className="w-full btn-success h-10"
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Export DXF
+                          </Button>
+                          <Button 
+                            onClick={handleExportSVG} 
+                            variant="outline"
+                            className="w-full glass-panel h-10"
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Export SVG
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Import Panel */}
+                  <Card className="premium-card">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-subsection flex items-center gap-2">
+                        <Upload className="h-5 w-5" />
+                        Import
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
                       <Button 
-                        onClick={handleExport} 
-                        className="w-full btn-success h-11"
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Export DXF (AlphaCAM)
-                      </Button>
-                      <Button 
-                        onClick={handleExportSVG} 
+                        onClick={() => fileInputRef.current?.click()}
                         variant="outline"
                         className="w-full glass-panel h-10"
                       >
-                        <Download className="mr-2 h-4 w-4" />
-                        Export SVG
+                        <Upload className="mr-2 h-4 w-4" />
+                        Import DXF File
                       </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".dxf"
+                        onChange={handleImport}
+                        className="hidden"
+                      />
+                    </CardContent>
+                  </Card>
 
-              {/* Import Panel */}
-              <Card className="premium-card">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-subsection flex items-center gap-2">
-                    <Upload className="h-5 w-5" />
-                    Import
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    onClick={() => fileInputRef.current?.click()}
-                    variant="outline"
-                    className="w-full glass-panel h-10"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Import DXF File
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".dxf"
-                    onChange={handleImport}
-                    className="hidden"
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Shape List */}
-              {hasShapes && (
-                <Card className="premium-card">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-subsection flex items-center justify-between">
-                      <span className="flex items-center gap-2">
-                        <Layers className="h-5 w-5" />
-                        Shapes ({shapes.length})
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ShapeList 
-                      shapes={shapes} 
-                      onRemoveShape={handleRemoveShape}
-                      onEditShape={handleEditShape}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {/* Main Canvas - 70% width, primary visual weight */}
-            <div className="xl:col-span-9">
-              <Card className="premium-card-elevated h-full min-h-[700px]">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-section flex items-center gap-3">
-                      <div className="h-3 w-3 rounded-full bg-primary animate-pulse-glow" />
-                      Workspace Canvas
-                    </CardTitle>
-                    {slab && (
-                      <div className="badge-info">
-                        <Maximize2 className="h-4 w-4" />
-                        <span>{slab.type === "slab" ? `${slab.width}×${slab.height} cm` : ""}</span>
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {slab ? (
-                    <div className="canvas-container">
-                      <ShapeCanvas />
-                    </div>
-                  ) : (
-                    /* Empty State with Guidance */
-                    <div className="empty-state">
-                      <div className="w-24 h-24 rounded-2xl glass-elevated animate-pulse-glow mx-auto flex items-center justify-center mb-6">
-                        <Layers className="h-12 w-12 text-primary" />
-                      </div>
-                      <div className="space-y-4 max-w-md">
-                        <h3 className="text-section">Get Started</h3>
-                        <p className="text-body text-muted-foreground">
-                          Begin by adding a slab to define your marble workspace dimensions. 
-                          Then add the shapes you need to cut and let the optimizer find the best layout.
-                        </p>
-                        <div className="flex flex-col gap-2 pt-4">
-                          <div className="flex items-center gap-3 text-caption">
-                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">1</div>
-                            <span>Add a slab (workspace dimensions)</span>
-                          </div>
-                          <div className="flex items-center gap-3 text-caption">
-                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">2</div>
-                            <span>Add shapes to cut</span>
-                          </div>
-                          <div className="flex items-center gap-3 text-caption">
-                            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary font-bold text-xs">3</div>
-                            <span>Click "Optimize Layout" for best arrangement</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  {/* Shape List */}
+                  {hasShapes && (
+                    <Card className="premium-card">
+                      <CardHeader className="pb-4">
+                        <CardTitle className="text-subsection flex items-center justify-between">
+                          <span className="flex items-center gap-2">
+                            <Layers className="h-5 w-5" />
+                            Shapes ({shapes.length})
+                          </span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ShapeList 
+                          shapes={shapes} 
+                          onRemoveShape={handleRemoveShape}
+                          onEditShape={handleEditShape}
+                        />
+                      </CardContent>
+                    </Card>
                   )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </SidebarContent>
+          </Sidebar>
         </div>
-      </div>
-    </TooltipProvider>
+      </TooltipProvider>
+    </SidebarProvider>
   );
 };
 
