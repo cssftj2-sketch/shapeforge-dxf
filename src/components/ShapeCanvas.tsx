@@ -73,8 +73,9 @@ export default function ShapeCanvas() {
     
     const stage = e.target.getStage();
     const pointerPos = stage.getPointerPosition();
-    const x = snapToGrid(pointerPos.x);
-    const y = snapToGrid(pointerPos.y);
+    // Convert pixels to centimeters
+    const x = snapToGrid(pointerPos.x) / GRID_SIZE;
+    const y = snapToGrid(pointerPos.y) / GRID_SIZE;
 
     setDragState({
       isDrawing: true,
@@ -89,13 +90,14 @@ export default function ShapeCanvas() {
 
     const stage = e.target.getStage();
     const pointerPos = stage.getPointerPosition();
-    const currentX = snapToGrid(pointerPos.x);
-    const currentY = snapToGrid(pointerPos.y);
+    // Convert pixels to centimeters
+    const currentX = snapToGrid(pointerPos.x) / GRID_SIZE;
+    const currentY = snapToGrid(pointerPos.y) / GRID_SIZE;
 
     const width = Math.abs(currentX - dragState.startX);
     const height = Math.abs(currentY - dragState.startY);
 
-    if (width > GRID_SIZE || height > GRID_SIZE || dragState.shapeType === 'line' || dragState.shapeType === 'arc') {
+    if (width > 1 || height > 1 || dragState.shapeType === 'line' || dragState.shapeType === 'arc') {
       const shapeData = createShapeFromDrag(
         dragState.shapeType,
         dragState.startX,
@@ -126,7 +128,7 @@ export default function ShapeCanvas() {
         const finalId = `shape-${Date.now()}`;
         replacePreview(previewShape, finalId);
         setSelectedId(finalId);
-        console.log(`${previewShape.type} created`);
+        console.log(`${previewShape.type} created at (${previewShape.x}, ${previewShape.y})`);
       }
     }
     
