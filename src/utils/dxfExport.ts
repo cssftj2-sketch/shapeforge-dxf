@@ -14,7 +14,7 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
   dxf += "0\nSECTION\n2\nTABLES\n";
   dxf += "0\nTABLE\n2\nLAYER\n70\n2\n";
   dxf += "0\nLAYER\n2\nSlab\n70\n0\n62\n1\n6\nCONTINUOUS\n";
-  dxf += "0\nLAYER\n2\nShapes\n70\n0\n62\n7\n6\nCONTINUOUS\n";
+  dxf += "0\nLAYER\n2\nMarbleShapes\n70\n0\n62\n7\n6\nCONTINUOUS\n";
   dxf += "0\nENDTAB\n";
   dxf += "0\nENDSEC\n";
   
@@ -31,14 +31,10 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
     dxf += `10\n0\n20\n0\n`;
   }
   
-  // Initialize positioning variables
-  let currentX = 0;
-  let currentY = slab ? slab.height * 10 + spacing * 10 : 0;
-  
   shapes.forEach((shape, index) => {
-    // Use currentX/currentY for positioning, not shape.x/shape.y
-    const x = currentX;
-    const y = currentY;
+    // Use the actual shape position from the canvas
+    const x = (shape.x || 0) * 10;
+    const y = (shape.y || 0) * 10;
     
     switch (shape.type) {
       case "rectangle":
@@ -49,9 +45,6 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
         dxf += `10\n${x + shape.width * 10}\n20\n${y + shape.height * 10}\n`;
         dxf += `10\n${x}\n20\n${y + shape.height * 10}\n`;
         dxf += `10\n${x}\n20\n${y}\n`;
-        
-        // Move to next position
-        currentX += shape.width * 10 + spacing * 10;
         break;
         
       case "l-shape-tl":
@@ -98,9 +91,6 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
           dxf += `10\n${x}\n20\n${y + h}\n`;
           dxf += `10\n${x}\n20\n${y}\n`;
         }
-        
-        // Move to next position
-        currentX += w + spacing * 10;
         break;
         
       case "triangle":
@@ -114,9 +104,6 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
         dxf += `10\n${x + (shape.base * 10) / 2}\n20\n${y + shape.height * 10}\n`;
         // Close the triangle back to bottom left
         dxf += `10\n${x}\n20\n${y}\n`;
-        
-        // Move to next position
-        currentX += shape.base * 10 + spacing * 10;
         break;
         
       case "circle":
@@ -126,9 +113,43 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
         dxf += "0\nCIRCLE\n8\nMarbleShapes\n";
         dxf += `10\n${centerX}\n20\n${centerY}\n`;
         dxf += `40\n${shape.radius * 10}\n`;
+        break;
         
-        // Move to next position (account for diameter)
-        currentX += shape.radius * 10 * 2 + spacing * 10;
+      case "line":
+        // Line as LWPOLYLINE (open path)
+        if (shape.nodes && shape.nodes.length > 0) {
+          dxf += `0\nLWPOLYLINE\n8\nMarbleShapes\n90\n${shape.nodes.length}\n70\n0\n`;
+          shape.nodes.forEach(node => {
+            dxf += `10\n${(x + node.x * 10)}\n20\n${(y + node.y * 10)}\n`;
+          });
+        }
+        break;
+        
+      case "arc":
+        // Arc as two concentric arcs forming a curved band
+        const innerR = shape.innerRadius * 10;
+        const outerR = shape.outerRadius * 10;
+        const arcAngle = shape.angle;
+        
+        // Calculate arc points (outer arc)
+        const segments = Math.max(16, Math.ceil(arcAngle / 10));
+        dxf += `0\nLWPOLYLINE\n8\nMarbleShapes\n90\n${segments * 2 + 2}\n70\n1\n`;
+        
+        // Outer arc points
+        for (let i = 0; i <= segments; i++) {
+          const angle = (i / segments) * arcAngle * Math.PI / 180;
+          const px = x + Math.cos(angle) * outerR;
+          const py = y + Math.sin(angle) * outerR;
+          dxf += `10\n${px}\n20\n${py}\n`;
+        }
+        
+        // Inner arc points (reverse direction)
+        for (let i = segments; i >= 0; i--) {
+          const angle = (i / segments) * arcAngle * Math.PI / 180;
+          const px = x + Math.cos(angle) * innerR;
+          const py = y + Math.sin(angle) * innerR;
+          dxf += `10\n${px}\n20\n${py}\n`;
+        }
         break;
         
       case "slab":
