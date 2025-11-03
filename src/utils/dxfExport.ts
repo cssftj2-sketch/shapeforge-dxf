@@ -23,6 +23,8 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
   // Calculate offset to position shapes outside the slab
   let xOffset = 0;
   let yOffset = 0;
+  let currentX = 0;
+  let currentY = 0;
   
   // Export slab first if it exists
   if (slab && slab.type === "slab") {
@@ -36,22 +38,27 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
     dxf += `10\n${slabX}\n20\n${slabY}\n`;
     
     // Position shapes to the right of the slab with spacing
-    xOffset = slab.width * 10 + spacing * 20; // Add extra spacing between slab and shapes
+    xOffset = slab.width * 10 + spacing * 20;
+    currentX = xOffset;
   }
   
-  shapes.forEach((shape) => {
-    const x = shape.x * 10 + xOffset; // Convert cm to mm and add offset
-    const y = shape.y * 10 + yOffset;
+  shapes.forEach((shape, index) => {
+    // Use currentX/currentY for positioning, not shape.x/shape.y
+    const x = currentX;
+    const y = currentY;
     
     switch (shape.type) {
       case "rectangle":
-        // Rectangle as POLYLINE
+        // Rectangle as closed POLYLINE
         dxf += "0\nLWPOLYLINE\n8\nMarbleShapes\n90\n5\n70\n1\n";
         dxf += `10\n${x}\n20\n${y}\n`;
         dxf += `10\n${x + shape.width * 10}\n20\n${y}\n`;
         dxf += `10\n${x + shape.width * 10}\n20\n${y + shape.height * 10}\n`;
         dxf += `10\n${x}\n20\n${y + shape.height * 10}\n`;
         dxf += `10\n${x}\n20\n${y}\n`;
+        
+        // Move to next position
+        currentX += shape.width * 10 + spacing * 10;
         break;
         
       case "l-shape-tl":
@@ -98,30 +105,41 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
           dxf += `10\n${x}\n20\n${y + h}\n`;
           dxf += `10\n${x}\n20\n${y}\n`;
         }
+        
+        // Move to next position
+        currentX += w + spacing * 10;
         break;
         
       case "triangle":
+        // Triangle with proper vertices (isosceles triangle pointing up)
         dxf += "0\nLWPOLYLINE\n8\nMarbleShapes\n90\n4\n70\n1\n";
-        dxf += `10\n${x + (shape.base * 10) / 2}\n20\n${y}\n`;
-        dxf += `10\n${x + shape.base * 10}\n20\n${y + shape.height * 10}\n`;
-        dxf += `10\n${x}\n20\n${y + shape.height * 10}\n`;
-        dxf += `10\n${x + (shape.base * 10) / 2}\n20\n${y}\n`;
+        // Bottom left vertex
+        dxf += `10\n${x}\n20\n${y}\n`;
+        // Bottom right vertex
+        dxf += `10\n${x + shape.base * 10}\n20\n${y}\n`;
+        // Top vertex (centered)
+        dxf += `10\n${x + (shape.base * 10) / 2}\n20\n${y + shape.height * 10}\n`;
+        // Close the triangle back to bottom left
+        dxf += `10\n${x}\n20\n${y}\n`;
+        
+        // Move to next position
+        currentX += shape.base * 10 + spacing * 10;
         break;
         
       case "circle":
+        // Circle with center point and radius
+        const centerX = x + shape.radius * 10;
+        const centerY = y + shape.radius * 10;
         dxf += "0\nCIRCLE\n8\nMarbleShapes\n";
-        dxf += `10\n${x + shape.radius * 10}\n20\n${y + shape.radius * 10}\n`;
+        dxf += `10\n${centerX}\n20\n${centerY}\n`;
         dxf += `40\n${shape.radius * 10}\n`;
+        
+        // Move to next position (account for diameter)
+        currentX += shape.radius * 10 * 2 + spacing * 10;
         break;
         
       case "slab":
-        // Slab as POLYLINE
-        dxf += "0\nLWPOLYLINE\n8\nMarbleShapes\n90\n5\n70\n1\n";
-        dxf += `10\n${x}\n20\n${y}\n`;
-        dxf += `10\n${x + shape.width * 10}\n20\n${y}\n`;
-        dxf += `10\n${x + shape.width * 10}\n20\n${y + shape.height * 10}\n`;
-        dxf += `10\n${x}\n20\n${y + shape.height * 10}\n`;
-        dxf += `10\n${x}\n20\n${y}\n`;
+        // Skip - slab is already exported separately
         break;
     }
   });
