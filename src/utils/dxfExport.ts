@@ -12,34 +12,23 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
   
   // Tables Section
   dxf += "0\nSECTION\n2\nTABLES\n";
-  dxf += "0\nTABLE\n2\nLAYER\n70\n1\n";
-  dxf += "0\nLAYER\n2\nMarbleShapes\n70\n0\n62\n7\n6\nCONTINUOUS\n";
+  dxf += "0\nTABLE\n2\nLAYER\n70\n2\n";
+  dxf += "0\nLAYER\n2\nSlab\n70\n0\n62\n1\n6\nCONTINUOUS\n";
+  dxf += "0\nLAYER\n2\nShapes\n70\n0\n62\n7\n6\nCONTINUOUS\n";
   dxf += "0\nENDTAB\n";
   dxf += "0\nENDSEC\n";
   
   // Entities Section
   dxf += "0\nSECTION\n2\nENTITIES\n";
   
-  // Calculate offset to position shapes outside the slab
-  let xOffset = 0;
-  let yOffset = 0;
-  let currentX = 0;
-  let currentY = 0;
-  
-  // Export slab first if it exists
+  // Export slab first if it exists (at origin)
   if (slab && slab.type === "slab") {
-    const slabX = 0;
-    const slabY = 0;
-    dxf += "0\nLWPOLYLINE\n8\nMarbleShapes\n90\n5\n70\n1\n";
-    dxf += `10\n${slabX}\n20\n${slabY}\n`;
-    dxf += `10\n${slabX + slab.width * 10}\n20\n${slabY}\n`;
-    dxf += `10\n${slabX + slab.width * 10}\n20\n${slabY + slab.height * 10}\n`;
-    dxf += `10\n${slabX}\n20\n${slabY + slab.height * 10}\n`;
-    dxf += `10\n${slabX}\n20\n${slabY}\n`;
-    
-    // Position shapes to the right of the slab with spacing
-    xOffset = slab.width * 10 + spacing * 20;
-    currentX = xOffset;
+    dxf += "0\nLWPOLYLINE\n8\nSlab\n90\n5\n70\n1\n";
+    dxf += `10\n0\n20\n0\n`;
+    dxf += `10\n${slab.width * 10}\n20\n0\n`;
+    dxf += `10\n${slab.width * 10}\n20\n${slab.height * 10}\n`;
+    dxf += `10\n0\n20\n${slab.height * 10}\n`;
+    dxf += `10\n0\n20\n0\n`;
   }
   
   shapes.forEach((shape, index) => {
