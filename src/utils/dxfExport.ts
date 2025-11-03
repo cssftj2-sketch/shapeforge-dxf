@@ -32,7 +32,8 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
   }
   
   shapes.forEach((shape, index) => {
-    // Use the actual shape position from the canvas
+    // Convert from centimeters to millimeters (multiply by 10)
+    // Shape coordinates are stored in centimeters in the application
     const x = (shape.x || 0) * 10;
     const y = (shape.y || 0) * 10;
     
