@@ -70,7 +70,6 @@ export const ShapeList = ({ shapes, onRemoveShape, onEditShape }: ShapeListProps
       case "l-shape-tr":
       case "l-shape-bl":
       case "l-shape-br":
-        // Approximate L-shape area (could be more precise)
         return (shape.width * shape.height) - ((shape.width - shape.legWidth) * (shape.height - shape.legHeight));
       case "triangle":
         return (shape.base * shape.height) / 2;
@@ -125,7 +124,7 @@ export const ShapeList = ({ shapes, onRemoveShape, onEditShape }: ShapeListProps
       </div>
 
       {/* Shape List */}
-      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
         {shapes.map((shape, index) => (
           <div
             key={shape.id}
@@ -134,7 +133,7 @@ export const ShapeList = ({ shapes, onRemoveShape, onEditShape }: ShapeListProps
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3 flex-1 min-w-0">
                 {/* Shape Icon with Color */}
-                <div className={`p-2 rounded-lg bg-background/50 ${getShapeColor(shape.type)} flex-shrink-0`}>
+                <div className={`p-2 rounded-lg bg-background/50 ${getShapeColor(shape.type)} flex-shrink-0 transition-colors`}>
                   {getShapeIcon(shape.type)}
                 </div>
                 
@@ -144,33 +143,33 @@ export const ShapeList = ({ shapes, onRemoveShape, onEditShape }: ShapeListProps
                     <h4 className="text-body font-semibold truncate">
                       {getShapeName(shape.type)}
                     </h4>
-                    <span className="text-caption text-muted-foreground">
+                    <span className="text-caption text-muted-foreground flex-shrink-0">
                       #{index + 1}
                     </span>
                   </div>
-                  <p className="text-caption text-muted-foreground truncate">
+                  <p className="text-caption text-muted-foreground truncate mb-2">
                     {getShapeDescription(shape)}
                   </p>
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="text-micro text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="text-micro text-muted-foreground whitespace-nowrap">
                       Area: {getShapeArea(shape).toFixed(1)} cm²
                     </span>
-                    <span className="text-micro text-muted-foreground">
+                    <span className="text-micro text-muted-foreground whitespace-nowrap">
                       Pos: ({shape.x.toFixed(1)}, {shape.y.toFixed(1)})
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Action Buttons - Always visible on mobile, hover on desktop */}
+              <div className="flex gap-1 flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => onEditShape(shape)}
-                      className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                      className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -186,7 +185,7 @@ export const ShapeList = ({ shapes, onRemoveShape, onEditShape }: ShapeListProps
                       variant="ghost"
                       size="icon"
                       onClick={() => onRemoveShape(shape.id)}
-                      className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                      className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
