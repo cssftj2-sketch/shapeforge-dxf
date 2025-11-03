@@ -31,6 +31,10 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
     dxf += `10\n0\n20\n0\n`;
   }
   
+  // Initialize positioning variables
+  let currentX = 0;
+  let currentY = slab ? slab.height * 10 + spacing * 10 : 0;
+  
   shapes.forEach((shape, index) => {
     // Use currentX/currentY for positioning, not shape.x/shape.y
     const x = currentX;
