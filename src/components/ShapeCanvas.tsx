@@ -35,10 +35,27 @@ export default function ShapeCanvas() {
   const [offsetValue, setOffsetValue] = useState(1);
   const [filletRadius, setFilletRadius] = useState(0.5);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
   
   const stageRef = useRef<any>(null);
   const transformerRef = useRef<any>(null);
   const shapeRefs = useRef<{ [key: string]: any }>({});
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Handle container resize
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        const width = containerRef.current.offsetWidth;
+        const height = containerRef.current.offsetHeight;
+        setContainerSize({ width, height });
+      }
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
   // ============================================================================
   // EVENT HANDLERS
@@ -247,8 +264,17 @@ export default function ShapeCanvas() {
     return '👆 Select a tool to get started';
   };
 
+  // Calculate canvas dimensions and scale
+  const canvasWidth = slabWidth * GRID_SIZE;
+  const canvasHeight = slabHeight * GRID_SIZE;
+  const scale = Math.min(
+    containerSize.width / canvasWidth,
+    containerSize.height / canvasHeight,
+    1.2 // Max scale
+  );
+
   return (
-    <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
+    <div className="h-full flex flex-col bg-gray-50">
       {/* Horizontal Toolbar */}
       <HorizontalToolbar
         toolMode={toolMode}
@@ -264,35 +290,46 @@ export default function ShapeCanvas() {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex relative overflow-hidden">
-        {/* Canvas */}
-        <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 flex relative min-h-0">
+        {/* Canvas Container */}
+        <div 
+          ref={containerRef}
+          className="flex-1 overflow-auto bg-gradient-to-br from-gray-50 to-gray-100 p-4"
+        >
           <div className="w-full h-full flex items-center justify-center">
-            <div className="border rounded-lg overflow-auto bg-white shadow-sm">
+            <div 
+              className="bg-white rounded-lg shadow-lg border border-gray-200"
+              style={{
+                transform: `scale(${scale})`,
+                transformOrigin: 'center center'
+              }}
+            >
               <Stage
                 ref={stageRef}
-                width={slabWidth * GRID_SIZE}
-                height={slabHeight * GRID_SIZE}
+                width={canvasWidth}
+                height={canvasHeight}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
               >
                 <Layer>
                   {/* Grid */}
-                  {Array.from({ length: slabWidth }).map((_, i) => (
+                  {Array.from({ length: slabWidth + 1 }).map((_, i) => (
                     <Line
                       key={`v-${i}`}
                       points={[i * GRID_SIZE, 0, i * GRID_SIZE, slabHeight * GRID_SIZE]}
                       stroke="#e5e7eb"
                       strokeWidth={0.5}
+                      listening={false}
                     />
                   ))}
-                  {Array.from({ length: slabHeight }).map((_, i) => (
+                  {Array.from({ length: slabHeight + 1 }).map((_, i) => (
                     <Line
                       key={`h-${i}`}
                       points={[0, i * GRID_SIZE, slabWidth * GRID_SIZE, i * GRID_SIZE]}
                       stroke="#e5e7eb"
                       strokeWidth={0.5}
+                      listening={false}
                     />
                   ))}
 
@@ -304,6 +341,7 @@ export default function ShapeCanvas() {
                     height={slabHeight * GRID_SIZE}
                     stroke="#374151"
                     strokeWidth={3}
+                    listening={false}
                   />
 
                   {/* Shapes */}
@@ -333,6 +371,13 @@ export default function ShapeCanvas() {
                 </Layer>
               </Stage>
             </div>
+          </div>
+
+          {/* Tool Mode Message */}
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-600 bg-white rounded-lg px-4 py-2 inline-block shadow-sm">
+              {getToolModeMessage()}
+            </p>
           </div>
         </div>
 
