@@ -82,6 +82,8 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
     startY: 0,
     shapeType: null as ShapeType | null
   });
+  const [isPanning, setIsPanning] = useState(false);
+  const [lastPointerPosition, setLastPointerPosition] = useState({ x: 0, y: 0 });
   const [offsetValue, setOffsetValue] = useState(1);
   const [filletRadius, setFilletRadius] = useState(0.5);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -113,6 +115,15 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
   };
 
   const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (e.evt.button === 1) {
+      setIsPanning(true);
+      setLastPointerPosition(stageRef.current?.getPointerPosition() || { x: 0, y: 0 });
+      if (stageRef.current) {
+        stageRef.current.container().style.cursor = 'grabbing';
+      }
+      return;
+    }
+
     if (e.target === e.target.getStage()) {
       if (toolMode === 'select') {
         setSelectedId(null);
@@ -136,6 +147,22 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
   };
 
   const handleMouseMove = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (isPanning && stageRef.current) {
+      const newPos = stageRef.current.getPointerPosition();
+      if (newPos) {
+        const dx = newPos.x - lastPointerPosition.x;
+        const dy = newPos.y - lastPointerPosition.y;
+
+        setStageState(prev => ({
+          ...prev,
+          x: prev.x + dx,
+          y: prev.y + dy,
+        }));
+        setLastPointerPosition(newPos);
+      }
+      return;
+    }
+
     if (!dragState.isDrawing || !dragState.shapeType) return;
 
     const stage = e.target.getStage();
@@ -165,6 +192,13 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
   };
 
   const handleMouseUp = () => {
+    if (isPanning) {
+      setIsPanning(false);
+      if (stageRef.current) {
+        stageRef.current.container().style.cursor = 'default';
+      }
+    }
+
     if (dragState.isDrawing) {
       const previewShape = shapes.find(s => s.id === 'preview-shape');
       if (previewShape) {
@@ -290,6 +324,7 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
                   shape={shape}
                   isSelected={shape.id === selectedId}
                   toolMode={toolMode}
+                  stageScale={stageState.scale}
                   onSelect={handleShapeClick}
                   onTransform={updateShape}
                   shapeRef={(node) => { shapeRefs.current[shape.id] = node; }}

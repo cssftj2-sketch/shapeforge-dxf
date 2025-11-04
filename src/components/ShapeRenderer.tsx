@@ -8,6 +8,7 @@ interface ShapeRendererProps {
   shape: Shape;
   isSelected: boolean;
   toolMode: ToolMode;
+  stageScale: number;
   onSelect: (id: string) => void;
   onTransform: (id: string, updates: Partial<Shape>) => void;
   shapeRef: (node: any) => void;
@@ -17,7 +18,8 @@ interface ShapeRendererProps {
 export const ShapeRenderer: React.FC<ShapeRendererProps> = ({ 
   shape, 
   isSelected, 
-  toolMode, 
+  toolMode,
+  stageScale,
   onSelect, 
   onTransform,
   shapeRef,
@@ -25,7 +27,7 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
 }) => {
   const scale = GRID_SIZE;
   const isDraggable = toolMode === 'select';
-  const strokeWidth = isSelected ? 3 : 2;
+  const strokeWidth = (isSelected ? 3 : 2) / stageScale;
   const measurementColor = isSelected ? '#3b82f6' : '#6b7280';
   const measurementBg = isSelected ? '#dbeafe' : '#f3f4f6';
 
@@ -243,10 +245,10 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
               <Circle
                 x={lineX}
                 y={lineY}
-                radius={5}
+                radius={5 / stageScale}
                 fill="white"
                 stroke="blue"
-                strokeWidth={2}
+                strokeWidth={2 / stageScale}
                 draggable
                 onDragMove={(e) => {
                   const newPoints = [...linePoints];
@@ -258,10 +260,10 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
               <Circle
                 x={lineX + linePoints[2] * scale}
                 y={lineY + linePoints[3] * scale}
-                radius={5}
+                radius={5 / stageScale}
                 fill="white"
                 stroke="blue"
-                strokeWidth={2}
+                strokeWidth={2 / stageScale}
                 draggable
                 onDragMove={(e) => {
                   const newPoints = [...linePoints];
