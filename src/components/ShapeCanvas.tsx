@@ -42,6 +42,18 @@ export default function ShapeCanvas() {
   const shapeRefs = useRef<{ [key: string]: any }>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Debug: Log shapes array changes
+  useEffect(() => {
+    console.log('Shapes array updated:', shapes.map(s => ({
+      id: s.id,
+      type: s.type,
+      x: s.x,
+      y: s.y,
+      ...(('width' in s) && { width: s.width }),
+      ...(('height' in s) && { height: s.height })
+    })));
+  }, [shapes]);
+
   // Handle container resize
   useEffect(() => {
     const updateSize = () => {
@@ -362,18 +374,21 @@ export default function ShapeCanvas() {
                   />
 
                   {/* Shapes */}
-                  {shapes.map(shape => (
-                    <ShapeRenderer
-                      key={shape.id}
-                      shape={shape}
-                      isSelected={shape.id === selectedId}
-                      toolMode={toolMode}
-                      onSelect={handleShapeClick}
-                      onTransform={updateShape}
-                      shapeRef={(node) => { shapeRefs.current[shape.id] = node; }}
-                      onMeasurementEdit={updateShapeMeasurement}
-                    />
-                  ))}
+                  {shapes.map(shape => {
+                    console.log(`Rendering shape in map: ${shape.id} (${shape.type})`, shape);
+                    return (
+                      <ShapeRenderer
+                        key={shape.id}
+                        shape={shape}
+                        isSelected={shape.id === selectedId}
+                        toolMode={toolMode}
+                        onSelect={handleShapeClick}
+                        onTransform={updateShape}
+                        shapeRef={(node) => { shapeRefs.current[shape.id] = node; }}
+                        onMeasurementEdit={updateShapeMeasurement}
+                      />
+                    );
+                  })}
 
                   {/* Transformer */}
                   <Transformer
