@@ -63,6 +63,14 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
     </>
   );
 
+  // Debug logging for rectangles
+  if (shape.type === 'rectangle') {
+    console.log(`Rendering rectangle ${shape.id}:`, {
+      shapeCm: { x: shape.x, y: shape.y, width: shape.width, height: shape.height },
+      pixels: { x: shape.x * scale, y: shape.y * scale, width: shape.width! * scale, height: shape.height! * scale }
+    });
+  }
+
   switch (shape.type) {
     case 'rectangle':
       const rectX = shape.x * scale;

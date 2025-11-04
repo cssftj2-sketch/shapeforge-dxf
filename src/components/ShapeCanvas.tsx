@@ -112,6 +112,14 @@ export default function ShapeCanvas() {
         ...shapeData
       } as Shape;
 
+      console.log('Preview shape data:', {
+        type: previewShape.type,
+        x: previewShape.x,
+        y: previewShape.y,
+        ...(('width' in previewShape) && { width: previewShape.width }),
+        ...(('height' in previewShape) && { height: previewShape.height })
+      });
+
       const existingPreview = shapes.find(s => s.id === 'preview-shape');
       if (existingPreview) {
         updateShape('preview-shape', previewShape);
@@ -126,9 +134,16 @@ export default function ShapeCanvas() {
       const previewShape = shapes.find(s => s.id === 'preview-shape');
       if (previewShape) {
         const finalId = `shape-${Date.now()}`;
+        console.log('Final shape before replacePreview:', {
+          type: previewShape.type,
+          x: previewShape.x,
+          y: previewShape.y,
+          ...(('width' in previewShape) && { width: previewShape.width }),
+          ...(('height' in previewShape) && { height: previewShape.height })
+        });
         replacePreview(previewShape, finalId);
         setSelectedId(finalId);
-        console.log(`${previewShape.type} created at (${previewShape.x}, ${previewShape.y})`);
+        console.log(`${previewShape.type} created with ID: ${finalId}`);
       }
     }
     
