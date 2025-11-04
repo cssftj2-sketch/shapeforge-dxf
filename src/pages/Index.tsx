@@ -477,7 +477,11 @@ const Index = () => {
                         </SidebarTrigger>
                       </div>
                       <div className="flex-1 overflow-hidden">
-                        <ShapeCanvas />
+                        <ShapeCanvas 
+                          shapes={shapes}
+                          setShapes={setShapes}
+                          slab={slab}
+                        />
                       </div>
                     </div>
                   ) : (

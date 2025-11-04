@@ -3,26 +3,47 @@ import { Stage, Layer, Rect, Line, Transformer } from 'react-konva';
 import { Shape, ShapeType, ToolMode } from '@/types/shapes';
 import { GRID_SIZE } from '@/constants/canvas';
 import { snapToGrid, createShapeFromDrag } from '@/utils/geometry';
-import { useShapeManager } from '@/hooks/useShapeManager';
 import { ShapeRenderer } from '@/components/ShapeRenderer';
 import { HorizontalToolbar } from '@/components/HorizontalToolbar';
 import { PropertiesSidebar } from '@/components/PropertiesSidebar';
 
-export default function ShapeCanvas() {
-  const slabWidth = 80;
-  const slabHeight = 60;
+interface ShapeCanvasProps {
+  shapes: Shape[];
+  setShapes: React.Dispatch<React.SetStateAction<Shape[]>>;
+  slab: Shape | null;
+}
+
+export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProps) {
+  const slabWidth = slab?.type === 'slab' ? slab.width : 80;
+  const slabHeight = slab?.type === 'slab' ? slab.height : 60;
   
-  const {
-    shapes,
-    selectedId,
-    setSelectedId,
-    selectedShape,
-    updateShape,
-    addShape,
-    removeShape,
-    duplicateShape,
-    replacePreview
-  } = useShapeManager([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedShape = shapes.find(s => s.id === selectedId);
+  
+  const updateShape = (id: string, updates: Partial<Shape>) => {
+    setShapes(prev => prev.map(s => s.id === id ? { ...s, ...updates } as Shape : s));
+  };
+  
+  const addShape = (shape: Shape) => {
+    setShapes(prev => [...prev, shape]);
+  };
+  
+  const removeShape = (id: string) => {
+    setShapes(prev => prev.filter(s => s.id !== id));
+    if (selectedId === id) setSelectedId(null);
+  };
+  
+  const duplicateShape = (id: string) => {
+    const shape = shapes.find(s => s.id === id);
+    if (!shape) return;
+    const newShape: Shape = { ...shape, id: `shape-${Date.now()}`, x: shape.x + 2, y: shape.y + 2 };
+    addShape(newShape);
+    setSelectedId(newShape.id);
+  };
+  
+  const replacePreview = (previewShape: Shape, finalId: string) => {
+    setShapes(prev => prev.filter(s => s.id !== 'preview-shape').concat({ ...previewShape, id: finalId }));
+  };
 
   const [selectedTool, setSelectedTool] = useState<ShapeType | null>(null);
   const [toolMode, setToolMode] = useState<ToolMode>('select');
@@ -374,7 +395,7 @@ export default function ShapeCanvas() {
                   />
 
                   {/* Shapes */}
-                  {shapes.map(shape => {
+                  {shapes.filter(s => s.type !== 'slab').map(shape => {
                     console.log(`Rendering shape in map: ${shape.id} (${shape.type})`, shape);
                     return (
                       <ShapeRenderer
