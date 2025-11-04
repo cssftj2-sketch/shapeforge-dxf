@@ -15,10 +15,10 @@ export const createShapeFromDrag = (
   const x = Math.min(startX, currentX);
   const y = Math.min(startY, currentY);
 
-  const base = {
+  const base: Partial<Shape> = {
     x: startX,
     y: startY,
-    stroke: '#6b7280', // ADDED: Default stroke color
+    stroke: '#6b7280', // FIXED: Default stroke color ensures outline is visible
     ...COLORS[type]
   };
 
@@ -26,16 +26,16 @@ export const createShapeFromDrag = (
     case 'rectangle':
       return { ...base, x, y, width, height };
     case 'circle':
-      // Circles should have x,y at the top-left of bounding box, not center.
-      return { ...base, x: startX, y: startY, radius: Math.sqrt(width*width + height*height) };
+      const radius = Math.sqrt(width ** 2 + height ** 2);
+      return { ...base, x: startX - radius, y: startY - radius, radius };
     case 'triangle':
       return { ...base, x, y, base: width, height };
     case 'line':
       return { ...base, points: [0, 0, currentX - startX, currentY - startY] };
     case 'arc':
-      const radius = Math.sqrt(Math.pow(width, 2) + Math.pow(height, 2));
+      const arcRadius = Math.sqrt(width ** 2 + height ** 2);
       const angle = Math.atan2(currentY - startY, currentX - startX) * (180 / Math.PI);
-      return { ...base, innerRadius: 0, outerRadius: radius, angle: Math.abs(angle) };
+      return { ...base, innerRadius: 0, outerRadius: arcRadius, angle: Math.abs(angle) };
     default:
       if (type.startsWith('l-shape-')) {
         return {
