@@ -21,7 +21,28 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
   const selectedShape = shapes.find(s => s.id === selectedId);
   
   const updateShape = (id: string, updates: Partial<Shape>) => {
-    setShapes(prev => prev.map(s => s.id === id ? { ...s, ...updates } as Shape : s));
+    setShapes(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      const updated = { ...s, ...updates } as Shape;
+      
+      // Clamp position and dimensions to slab bounds for shapes with width/height
+      if ('x' in updated) {
+        const shapeWidth = 'width' in updated ? updated.width : 0;
+        updated.x = Math.max(0, Math.min(slabWidth - shapeWidth, updated.x));
+      }
+      if ('y' in updated) {
+        const shapeHeight = 'height' in updated ? updated.height : 0;
+        updated.y = Math.max(0, Math.min(slabHeight - shapeHeight, updated.y));
+      }
+      if ('width' in updated && typeof updated.width === 'number') {
+        updated.width = Math.max(0.5, Math.min(slabWidth - updated.x, updated.width));
+      }
+      if ('height' in updated && typeof updated.height === 'number') {
+        updated.height = Math.max(0.5, Math.min(slabHeight - updated.y, updated.height));
+      }
+      
+      return updated;
+    }));
   };
   
   const addShape = (shape: Shape) => {
@@ -62,18 +83,6 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
   const transformerRef = useRef<any>(null);
   const shapeRefs = useRef<{ [key: string]: any }>({});
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Debug: Log shapes array changes
-  useEffect(() => {
-    console.log('Shapes array updated:', shapes.map(s => ({
-      id: s.id,
-      type: s.type,
-      x: s.x,
-      y: s.y,
-      ...(('width' in s) && { width: s.width }),
-      ...(('height' in s) && { height: s.height })
-    })));
-  }, [shapes]);
 
   // Handle container resize
   useEffect(() => {
@@ -123,9 +132,9 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
 
     const stage = e.target.getStage();
     const pointerPos = stage.getPointerPosition();
-    // Convert pixels to centimeters
-    const currentX = snapToGrid(pointerPos.x) / GRID_SIZE;
-    const currentY = snapToGrid(pointerPos.y) / GRID_SIZE;
+    // Convert pixels to centimeters and clamp to slab bounds
+    const currentX = Math.max(0, Math.min(slabWidth, snapToGrid(pointerPos.x) / GRID_SIZE));
+    const currentY = Math.max(0, Math.min(slabHeight, snapToGrid(pointerPos.y) / GRID_SIZE));
 
     const width = Math.abs(currentX - dragState.startX);
     const height = Math.abs(currentY - dragState.startY);
@@ -145,14 +154,6 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
         ...shapeData
       } as Shape;
 
-      console.log('Preview shape data:', {
-        type: previewShape.type,
-        x: previewShape.x,
-        y: previewShape.y,
-        ...(('width' in previewShape) && { width: previewShape.width }),
-        ...(('height' in previewShape) && { height: previewShape.height })
-      });
-
       const existingPreview = shapes.find(s => s.id === 'preview-shape');
       if (existingPreview) {
         updateShape('preview-shape', previewShape);
@@ -167,16 +168,8 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
       const previewShape = shapes.find(s => s.id === 'preview-shape');
       if (previewShape) {
         const finalId = `shape-${Date.now()}`;
-        console.log('Final shape before replacePreview:', {
-          type: previewShape.type,
-          x: previewShape.x,
-          y: previewShape.y,
-          ...(('width' in previewShape) && { width: previewShape.width }),
-          ...(('height' in previewShape) && { height: previewShape.height })
-        });
         replacePreview(previewShape, finalId);
         setSelectedId(finalId);
-        console.log(`${previewShape.type} created with ID: ${finalId}`);
       }
     }
     
@@ -395,21 +388,18 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
                   />
 
                   {/* Shapes */}
-                  {shapes.filter(s => s.type !== 'slab').map(shape => {
-                    console.log(`Rendering shape in map: ${shape.id} (${shape.type})`, shape);
-                    return (
-                      <ShapeRenderer
-                        key={shape.id}
-                        shape={shape}
-                        isSelected={shape.id === selectedId}
-                        toolMode={toolMode}
-                        onSelect={handleShapeClick}
-                        onTransform={updateShape}
-                        shapeRef={(node) => { shapeRefs.current[shape.id] = node; }}
-                        onMeasurementEdit={updateShapeMeasurement}
-                      />
-                    );
-                  })}
+                  {shapes.filter(s => s.type !== 'slab').map(shape => (
+                    <ShapeRenderer
+                      key={shape.id}
+                      shape={shape}
+                      isSelected={shape.id === selectedId}
+                      toolMode={toolMode}
+                      onSelect={handleShapeClick}
+                      onTransform={updateShape}
+                      shapeRef={(node) => { shapeRefs.current[shape.id] = node; }}
+                      onMeasurementEdit={updateShapeMeasurement}
+                    />
+                  ))}
 
                   {/* Transformer */}
                   <Transformer

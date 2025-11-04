@@ -36,8 +36,34 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
     });
   };
 
-  const renderMeasurementLabel = (x: number, y: number, text: string, rotation: number = 0) => (
-    <>
+  const renderMeasurementLabel = (
+    x: number, 
+    y: number, 
+    text: string, 
+    rotation: number = 0,
+    field?: string,
+    currentValue?: number
+  ) => (
+    <Group
+      onClick={(e) => {
+        e.cancelBubble = true;
+        if (field && currentValue !== undefined && onMeasurementEdit) {
+          const newValue = prompt(`Enter new value for ${field} (cm):`, currentValue.toString());
+          if (newValue && !isNaN(parseFloat(newValue))) {
+            onMeasurementEdit(field, parseFloat(newValue));
+          }
+        }
+      }}
+      onTap={(e) => {
+        e.cancelBubble = true;
+        if (field && currentValue !== undefined && onMeasurementEdit) {
+          const newValue = prompt(`Enter new value for ${field} (cm):`, currentValue.toString());
+          if (newValue && !isNaN(parseFloat(newValue))) {
+            onMeasurementEdit(field, parseFloat(newValue));
+          }
+        }
+      }}
+    >
       <Rect
         x={x - 30}
         y={y - 10}
@@ -46,7 +72,7 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
         fill={measurementBg}
         cornerRadius={4}
         opacity={0.9}
-        listening={false}
+        listening={!!field}
       />
       <Text
         x={x - 30}
@@ -57,10 +83,10 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
         fontStyle="bold"
         fill={measurementColor}
         align="center"
-        listening={false}
+        listening={!!field}
         rotation={rotation}
       />
-    </>
+    </Group>
   );
 
   // Debug logging for rectangles
@@ -106,11 +132,11 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
               node.scaleY(1);
             }}
           />
-          {/* Measurement labels on all sides */}
-          {renderMeasurementLabel(rectX + rectW / 2, rectY - 20, `${shape.width?.toFixed(1)} cm`)}
-          {renderMeasurementLabel(rectX + rectW / 2, rectY + rectH + 20, `${shape.width?.toFixed(1)} cm`)}
-          {renderMeasurementLabel(rectX - 35, rectY + rectH / 2, `${shape.height?.toFixed(1)} cm`, -90)}
-          {renderMeasurementLabel(rectX + rectW + 35, rectY + rectH / 2, `${shape.height?.toFixed(1)} cm`, 90)}
+          {/* Measurement labels on all sides - clickable */}
+          {renderMeasurementLabel(rectX + rectW / 2, rectY - 20, `${shape.width?.toFixed(1)} cm`, 0, 'width', shape.width)}
+          {renderMeasurementLabel(rectX + rectW / 2, rectY + rectH + 20, `${shape.width?.toFixed(1)} cm`, 0, 'width', shape.width)}
+          {renderMeasurementLabel(rectX - 35, rectY + rectH / 2, `${shape.height?.toFixed(1)} cm`, -90, 'height', shape.height)}
+          {renderMeasurementLabel(rectX + rectW + 35, rectY + rectH / 2, `${shape.height?.toFixed(1)} cm`, 90, 'height', shape.height)}
         </Group>
       );
 
@@ -151,9 +177,9 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
               node.scaleY(1);
             }}
           />
-          {/* Radius label */}
-          {renderMeasurementLabel(circleX, circleY - radius - 25, `R: ${shape.radius?.toFixed(1)} cm`)}
-          {/* Diameter label */}
+          {/* Radius label - clickable */}
+          {renderMeasurementLabel(circleX, circleY - radius - 25, `R: ${shape.radius?.toFixed(1)} cm`, 0, 'radius', shape.radius)}
+          {/* Diameter label - non-editable */}
           {renderMeasurementLabel(circleX, circleY + radius + 25, `Ø: ${(shape.radius! * 2).toFixed(1)} cm`)}
         </Group>
       );
@@ -185,10 +211,10 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
             onTap={() => onSelect(shape.id)}
             onDragEnd={handleDragEnd}
           />
-          {/* Base measurement */}
-          {renderMeasurementLabel(triX + triBase / 2, triY + triHeight + 25, `B: ${shape.base?.toFixed(1)} cm`)}
-          {/* Height measurement */}
-          {renderMeasurementLabel(triX - 35, triY + triHeight / 2, `H: ${shape.height?.toFixed(1)} cm`, -90)}
+          {/* Base measurement - clickable */}
+          {renderMeasurementLabel(triX + triBase / 2, triY + triHeight + 25, `B: ${shape.base?.toFixed(1)} cm`, 0, 'base', shape.base)}
+          {/* Height measurement - clickable */}
+          {renderMeasurementLabel(triX - 35, triY + triHeight / 2, `H: ${shape.height?.toFixed(1)} cm`, -90, 'height', shape.height)}
         </Group>
       );
 
@@ -316,10 +342,10 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
               onTap={() => onSelect(shape.id)}
               onDragEnd={handleDragEnd}
             />
-            {/* L-Shape measurements */}
-            {renderMeasurementLabel(lX + w / 2, lY - 20, `${shape.width?.toFixed(1)} cm`)}
-            {renderMeasurementLabel(lX - 35, lY + h / 2, `${shape.height?.toFixed(1)} cm`, -90)}
-            {renderMeasurementLabel(lX + lw / 2, lY + h + 20, `Leg: ${shape.legWidth?.toFixed(1)}×${shape.legHeight?.toFixed(1)} cm`)}
+            {/* L-Shape measurements - clickable */}
+            {renderMeasurementLabel(lX + w / 2, lY - 20, `${shape.width?.toFixed(1)} cm`, 0, 'width', shape.width)}
+            {renderMeasurementLabel(lX - 35, lY + h / 2, `${shape.height?.toFixed(1)} cm`, -90, 'height', shape.height)}
+            {renderMeasurementLabel(lX + lw / 2, lY + h + 20, `Leg: ${shape.legWidth?.toFixed(1)}×${shape.legHeight?.toFixed(1)} cm`, 0, 'legWidth', shape.legWidth)}
           </Group>
         );
       }
