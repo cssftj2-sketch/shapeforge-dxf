@@ -10,40 +10,41 @@ export const createShapeFromDrag = (
   currentX: number,
   currentY: number
 ): Partial<Shape> => {
+  // Note: coordinates are already in centimeters from ShapeCanvas
   const width = Math.abs(currentX - startX);
   const height = Math.abs(currentY - startY);
   const x = Math.min(startX, currentX);
   const y = Math.min(startY, currentY);
 
   const base = {
-    x: startX / GRID_SIZE,
-    y: startY / GRID_SIZE,
+    x: startX,
+    y: startY,
     ...COLORS[type]
   };
 
   switch (type) {
     case 'rectangle':
-      return { ...base, x: x / GRID_SIZE, y: y / GRID_SIZE, width: width / GRID_SIZE, height: height / GRID_SIZE };
+      return { ...base, x, y, width, height };
     case 'circle':
-      return { ...base, radius: Math.min(width, height) / 2 / GRID_SIZE };
+      return { ...base, radius: Math.min(width, height) / 2 };
     case 'triangle':
-      return { ...base, x: x / GRID_SIZE, y: y / GRID_SIZE, base: width / GRID_SIZE, height: height / GRID_SIZE };
+      return { ...base, x, y, base: width, height };
     case 'line':
-      return { ...base, points: [0, 0, (currentX - startX) / GRID_SIZE, (currentY - startY) / GRID_SIZE] };
+      return { ...base, points: [0, 0, currentX - startX, currentY - startY] };
     case 'arc':
-      const radius = Math.sqrt(Math.pow(width, 2) + Math.pow(height, 2)) / 2 / GRID_SIZE;
+      const radius = Math.sqrt(Math.pow(width, 2) + Math.pow(height, 2)) / 2;
       const angle = Math.atan2(currentY - startY, currentX - startX) * (180 / Math.PI);
       return { ...base, innerRadius: 0, outerRadius: radius, angle: Math.abs(angle) };
     default:
       if (type.startsWith('l-shape-')) {
         return {
           ...base,
-          x: x / GRID_SIZE,
-          y: y / GRID_SIZE,
-          width: width / GRID_SIZE,
-          height: height / GRID_SIZE,
-          legWidth: (width / 2) / GRID_SIZE,
-          legHeight: (height / 2) / GRID_SIZE
+          x,
+          y,
+          width,
+          height,
+          legWidth: width / 2,
+          legHeight: height / 2
         };
       }
       return base;
