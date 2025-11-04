@@ -10,7 +10,6 @@ export const createShapeFromDrag = (
   currentX: number,
   currentY: number
 ): Partial<Shape> => {
-  // Note: coordinates are already in centimeters from ShapeCanvas
   const width = Math.abs(currentX - startX);
   const height = Math.abs(currentY - startY);
   const x = Math.min(startX, currentX);
@@ -19,6 +18,7 @@ export const createShapeFromDrag = (
   const base = {
     x: startX,
     y: startY,
+    stroke: '#6b7280', // ADDED: Default stroke color
     ...COLORS[type]
   };
 
@@ -26,13 +26,14 @@ export const createShapeFromDrag = (
     case 'rectangle':
       return { ...base, x, y, width, height };
     case 'circle':
-      return { ...base, radius: Math.min(width, height) / 2 };
+      // Circles should have x,y at the top-left of bounding box, not center.
+      return { ...base, x: startX, y: startY, radius: Math.sqrt(width*width + height*height) };
     case 'triangle':
       return { ...base, x, y, base: width, height };
     case 'line':
       return { ...base, points: [0, 0, currentX - startX, currentY - startY] };
     case 'arc':
-      const radius = Math.sqrt(Math.pow(width, 2) + Math.pow(height, 2)) / 2;
+      const radius = Math.sqrt(Math.pow(width, 2) + Math.pow(height, 2));
       const angle = Math.atan2(currentY - startY, currentX - startX) * (180 / Math.PI);
       return { ...base, innerRadius: 0, outerRadius: radius, angle: Math.abs(angle) };
     default:
@@ -56,7 +57,7 @@ export const getLShapePoints = (type: ShapeType, w: number, h: number, lw: numbe
     case 'l-shape-tl': return [0, 0, w, 0, w, lh, lw, lh, lw, h, 0, h];
     case 'l-shape-tr': return [0, 0, w, 0, w, h, w - lw, h, w - lw, lh, 0, lh];
     case 'l-shape-bl': return [0, 0, lw, 0, lw, h - lh, w, h - lh, w, h, 0, h];
-    case 'l-shape-br': return [0, h - lh, w - lw, h - lh, w - lw, 0, w, 0, w, h, 0, h];
+    case 'l-shape-br': return [w, 0, w, h, 0, h, 0, h-lh, w-lw, h-lh, w-lw, 0];
     default: return [];
   }
 };
