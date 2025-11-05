@@ -1,6 +1,6 @@
 import { Shape } from "@/types/shapes";
 
-export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): string => {
+export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape, arrangedShapes?: Shape[]): string => {
   let dxf = "";
   
   // DXF Header - DeepNest compatible
@@ -12,16 +12,21 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
   
   // Tables Section
   dxf += "0\nSECTION\n2\nTABLES\n";
-  dxf += "0\nTABLE\n2\nLAYER\n70\n2\n";
+  dxf += "0\nTABLE\n2\nLAYER\n70\n4\n";
   dxf += "0\nLAYER\n2\nSlab\n70\n0\n62\n1\n6\nCONTINUOUS\n";
   dxf += "0\nLAYER\n2\nMarbleShapes\n70\n0\n62\n7\n6\nCONTINUOUS\n";
+  dxf += "0\nLAYER\n2\nUnusedSpace\n70\n0\n62\n3\n6\nCONTINUOUS\n";
+  dxf += "0\nLAYER\n2\nText\n70\n0\n62\n2\n6\nCONTINUOUS\n";
   dxf += "0\nENDTAB\n";
   dxf += "0\nENDSEC\n";
   
   // Entities Section
   dxf += "0\nSECTION\n2\nENTITIES\n";
   
-  // Export slab first if it exists (at origin)
+  // Calculate offset for shapes
+  const shapeOffsetX = (slab && slab.type === "slab") ? (slab.width * 10) + 100 : 0; // 100mm spacing
+  
+  // VERSION 1: Export slab and shapes side by side
   if (slab && slab.type === "slab") {
     dxf += "0\nLWPOLYLINE\n8\nSlab\n90\n5\n70\n1\n";
     dxf += `10\n0\n20\n0\n`;
@@ -31,10 +36,9 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
     dxf += `10\n0\n20\n0\n`;
   }
   
+  // Export shapes with offset (beside the slab)
   shapes.forEach((shape, index) => {
-    // Convert from centimeters to millimeters (multiply by 10)
-    // Shape coordinates are stored in centimeters in the application
-    const x = (shape.x || 0) * 10;
+    const x = shapeOffsetX + ((shape.x || 0) * 10);
     const y = (shape.y || 0) * 10;
     
     switch (shape.type) {
@@ -159,14 +163,245 @@ export const exportToDXF = (shapes: Shape[], spacing: number, slab?: Shape): str
     }
   });
   
+  // VERSION 2: Export optimized layout with unused space calculation
+  if (slab && slab.type === "slab" && arrangedShapes && arrangedShapes.length > 0) {
+    const slabWidth = slab.width * 10;
+    const slabHeight = slab.height * 10;
+    const offsetY = slabHeight + 100; // Position below version 1
+    
+    // Export slab for version 2
+    dxf += "0\nLWPOLYLINE\n8\nSlab\n90\n5\n70\n1\n";
+    dxf += `10\n0\n20\n${offsetY}\n`;
+    dxf += `10\n${slabWidth}\n20\n${offsetY}\n`;
+    dxf += `10\n${slabWidth}\n20\n${offsetY + slabHeight}\n`;
+    dxf += `10\n0\n20\n${offsetY + slabHeight}\n`;
+    dxf += `10\n0\n20\n${offsetY}\n`;
+    
+    // Export arranged shapes
+    arrangedShapes.forEach((shape) => {
+      if (shape.type === "slab") return;
+      
+      const x = (shape.x || 0) * 10;
+      const y = offsetY + ((shape.y || 0) * 10);
+      
+      switch (shape.type) {
+        case "rectangle":
+          dxf += "0\nLWPOLYLINE\n8\nMarbleShapes\n90\n5\n70\n1\n";
+          dxf += `10\n${x}\n20\n${y}\n`;
+          dxf += `10\n${x + shape.width * 10}\n20\n${y}\n`;
+          dxf += `10\n${x + shape.width * 10}\n20\n${y + shape.height * 10}\n`;
+          dxf += `10\n${x}\n20\n${y + shape.height * 10}\n`;
+          dxf += `10\n${x}\n20\n${y}\n`;
+          break;
+          
+        case "l-shape-tl":
+        case "l-shape-tr":
+        case "l-shape-bl":
+        case "l-shape-br":
+          const w = shape.width * 10;
+          const h = shape.height * 10;
+          const lw = shape.legWidth * 10;
+          const lh = shape.legHeight * 10;
+          
+          dxf += "0\nLWPOLYLINE\n8\nMarbleShapes\n90\n7\n70\n1\n";
+          
+          if (shape.type === "l-shape-tl") {
+            dxf += `10\n${x}\n20\n${y}\n`;
+            dxf += `10\n${x + w}\n20\n${y}\n`;
+            dxf += `10\n${x + w}\n20\n${y + lh}\n`;
+            dxf += `10\n${x + lw}\n20\n${y + lh}\n`;
+            dxf += `10\n${x + lw}\n20\n${y + h}\n`;
+            dxf += `10\n${x}\n20\n${y + h}\n`;
+            dxf += `10\n${x}\n20\n${y}\n`;
+          } else if (shape.type === "l-shape-tr") {
+            dxf += `10\n${x}\n20\n${y}\n`;
+            dxf += `10\n${x + w}\n20\n${y}\n`;
+            dxf += `10\n${x + w}\n20\n${y + h}\n`;
+            dxf += `10\n${x + w - lw}\n20\n${y + h}\n`;
+            dxf += `10\n${x + w - lw}\n20\n${y + lh}\n`;
+            dxf += `10\n${x}\n20\n${y + lh}\n`;
+            dxf += `10\n${x}\n20\n${y}\n`;
+          } else if (shape.type === "l-shape-bl") {
+            dxf += `10\n${x}\n20\n${y}\n`;
+            dxf += `10\n${x + lw}\n20\n${y}\n`;
+            dxf += `10\n${x + lw}\n20\n${y + h - lh}\n`;
+            dxf += `10\n${x + w}\n20\n${y + h - lh}\n`;
+            dxf += `10\n${x + w}\n20\n${y + h}\n`;
+            dxf += `10\n${x}\n20\n${y + h}\n`;
+            dxf += `10\n${x}\n20\n${y}\n`;
+          } else if (shape.type === "l-shape-br") {
+            dxf += `10\n${x}\n20\n${y}\n`;
+            dxf += `10\n${x + w}\n20\n${y}\n`;
+            dxf += `10\n${x + w}\n20\n${y + h - lh}\n`;
+            dxf += `10\n${x + w - lw}\n20\n${y + h - lh}\n`;
+            dxf += `10\n${x + w - lw}\n20\n${y + h}\n`;
+            dxf += `10\n${x}\n20\n${y + h}\n`;
+            dxf += `10\n${x}\n20\n${y}\n`;
+          }
+          break;
+          
+        case "triangle":
+          dxf += "0\nLWPOLYLINE\n8\nMarbleShapes\n90\n4\n70\n1\n";
+          dxf += `10\n${x}\n20\n${y}\n`;
+          dxf += `10\n${x + shape.base * 10}\n20\n${y}\n`;
+          dxf += `10\n${x + (shape.base * 10) / 2}\n20\n${y + shape.height * 10}\n`;
+          dxf += `10\n${x}\n20\n${y}\n`;
+          break;
+          
+        case "circle":
+          const centerX = x + shape.radius * 10;
+          const centerY = y + shape.radius * 10;
+          dxf += "0\nCIRCLE\n8\nMarbleShapes\n";
+          dxf += `10\n${centerX}\n20\n${centerY}\n`;
+          dxf += `40\n${shape.radius * 10}\n`;
+          break;
+      }
+    });
+    
+    // Calculate and visualize unused space
+    const unusedRects = calculateUnusedSpace(arrangedShapes, slabWidth, slabHeight, spacing);
+    unusedRects.forEach((rect, index) => {
+      const rx = rect.x;
+      const ry = offsetY + rect.y;
+      
+      // Draw unused space rectangle
+      dxf += "0\nLWPOLYLINE\n8\nUnusedSpace\n90\n5\n70\n1\n";
+      dxf += `10\n${rx}\n20\n${ry}\n`;
+      dxf += `10\n${rx + rect.width}\n20\n${ry}\n`;
+      dxf += `10\n${rx + rect.width}\n20\n${ry + rect.height}\n`;
+      dxf += `10\n${rx}\n20\n${ry + rect.height}\n`;
+      dxf += `10\n${rx}\n20\n${ry}\n`;
+      
+      // Add text label in the center of the unused space
+      const textX = rx + rect.width / 2;
+      const textY = ry + rect.height / 2;
+      const textHeight = Math.min(rect.width, rect.height) / 4;
+      const code = `U${index + 1}`;
+      
+      dxf += "0\nTEXT\n8\nText\n";
+      dxf += `10\n${textX}\n20\n${textY}\n`;
+      dxf += `40\n${textHeight}\n`;
+      dxf += `1\n${code}\n`;
+      dxf += `72\n1\n`; // Horizontal alignment: center
+      dxf += `73\n2\n`; // Vertical alignment: middle
+    });
+  }
+  
   dxf += "0\nENDSEC\n";
   dxf += "0\nEOF\n";
   
   return dxf;
 };
 
-export const downloadDXF = (shapes: Shape[], spacing: number, slab?: Shape) => {
-  const dxfContent = exportToDXF(shapes, spacing, slab);
+// Calculate unused space within the slab
+function calculateUnusedSpace(shapes: Shape[], slabWidth: number, slabHeight: number, spacing: number): Array<{x: number, y: number, width: number, height: number}> {
+  const minRectSize = 100; // Minimum 100mm to show unused space
+  const grid: boolean[][] = [];
+  const gridSize = 10; // 10mm grid resolution
+  const cols = Math.ceil(slabWidth / gridSize);
+  const rows = Math.ceil(slabHeight / gridSize);
+  
+  // Initialize grid
+  for (let i = 0; i < rows; i++) {
+    grid[i] = new Array(cols).fill(false);
+  }
+  
+  // Mark occupied cells
+  shapes.forEach(shape => {
+    if (shape.type === "slab") return;
+    
+    const x = (shape.x || 0) * 10;
+    const y = (shape.y || 0) * 10;
+    let width = 0, height = 0;
+    
+    switch (shape.type) {
+      case "rectangle":
+        width = shape.width * 10;
+        height = shape.height * 10;
+        break;
+      case "l-shape-tl":
+      case "l-shape-tr":
+      case "l-shape-bl":
+      case "l-shape-br":
+        width = shape.width * 10;
+        height = shape.height * 10;
+        break;
+      case "triangle":
+        width = shape.base * 10;
+        height = shape.height * 10;
+        break;
+      case "circle":
+        width = shape.radius * 10 * 2;
+        height = shape.radius * 10 * 2;
+        break;
+    }
+    
+    const startCol = Math.floor(x / gridSize);
+    const endCol = Math.min(cols - 1, Math.ceil((x + width) / gridSize));
+    const startRow = Math.floor(y / gridSize);
+    const endRow = Math.min(rows - 1, Math.ceil((y + height) / gridSize));
+    
+    for (let r = startRow; r <= endRow; r++) {
+      for (let c = startCol; c <= endCol; c++) {
+        if (r >= 0 && r < rows && c >= 0 && c < cols) {
+          grid[r][c] = true;
+        }
+      }
+    }
+  });
+  
+  // Find rectangular unused regions
+  const unusedRects: Array<{x: number, y: number, width: number, height: number}> = [];
+  const visited: boolean[][] = grid.map(row => row.map(() => false));
+  
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (!grid[r][c] && !visited[r][c]) {
+        // Find the largest rectangle starting from this cell
+        let width = 0;
+        while (c + width < cols && !grid[r][c + width] && !visited[r][c + width]) {
+          width++;
+        }
+        
+        let height = 1;
+        let canExpand = true;
+        while (r + height < rows && canExpand) {
+          for (let w = 0; w < width; w++) {
+            if (grid[r + height][c + w] || visited[r + height][c + w]) {
+              canExpand = false;
+              break;
+            }
+          }
+          if (canExpand) height++;
+        }
+        
+        const rectWidth = width * gridSize;
+        const rectHeight = height * gridSize;
+        
+        if (rectWidth >= minRectSize && rectHeight >= minRectSize) {
+          unusedRects.push({
+            x: c * gridSize,
+            y: r * gridSize,
+            width: rectWidth,
+            height: rectHeight
+          });
+        }
+        
+        // Mark as visited
+        for (let rr = r; rr < r + height; rr++) {
+          for (let cc = c; cc < c + width; cc++) {
+            visited[rr][cc] = true;
+          }
+        }
+      }
+    }
+  }
+  
+  return unusedRects;
+}
+
+export const downloadDXF = (shapes: Shape[], spacing: number, slab?: Shape, arrangedShapes?: Shape[]) => {
+  const dxfContent = exportToDXF(shapes, spacing, slab, arrangedShapes);
   const blob = new Blob([dxfContent], { type: "application/dxf" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
