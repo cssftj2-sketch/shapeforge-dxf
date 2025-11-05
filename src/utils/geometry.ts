@@ -15,27 +15,27 @@ export const createShapeFromDrag = (
   const x = Math.min(startX, currentX);
   const y = Math.min(startY, currentY);
 
-  const base: Partial<Shape> = {
+  const base = {
     x: startX,
     y: startY,
-    stroke: '#6b7280', // FIXED: Default stroke color ensures outline is visible
+    stroke: '#000000',
     ...COLORS[type]
   };
 
   switch (type) {
     case 'rectangle':
-      return { ...base, x, y, width, height };
+      return { ...base, x, y, width, height } as Partial<Shape>;
     case 'circle':
       const radius = Math.sqrt(width ** 2 + height ** 2);
-      return { ...base, x: startX - radius, y: startY - radius, radius };
+      return { ...base, x: startX - radius, y: startY - radius, radius } as Partial<Shape>;
     case 'triangle':
-      return { ...base, x, y, base: width, height };
+      return { ...base, x, y, base: width, height } as Partial<Shape>;
     case 'line':
-      return { ...base, points: [0, 0, currentX - startX, currentY - startY] };
+      return { ...base, points: [0, 0, currentX - startX, currentY - startY] } as Partial<Shape>;
     case 'arc':
       const arcRadius = Math.sqrt(width ** 2 + height ** 2);
       const angle = Math.atan2(currentY - startY, currentX - startX) * (180 / Math.PI);
-      return { ...base, innerRadius: 0, outerRadius: arcRadius, angle: Math.abs(angle) };
+      return { ...base, innerRadius: 0, outerRadius: arcRadius, angle: Math.abs(angle) } as Partial<Shape>;
     default:
       if (type.startsWith('l-shape-')) {
         return {
@@ -46,9 +46,9 @@ export const createShapeFromDrag = (
           height,
           legWidth: width / 2,
           legHeight: height / 2
-        };
+        } as Partial<Shape>;
       }
-      return base;
+      return base as Partial<Shape>;
   }
 };
 

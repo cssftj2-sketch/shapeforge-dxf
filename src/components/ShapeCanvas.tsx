@@ -111,7 +111,8 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
   const getPointerPosition = (stage: Konva.Stage) => {
     const pointer = stage.getPointerPosition();
     if (!pointer) return { x: 0, y: 0 };
-    return stage.getInverseTransform().point(pointer);
+    const transform = stage.getAbsoluteTransform().copy().invert();
+    return transform.point(pointer);
   };
 
   const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
