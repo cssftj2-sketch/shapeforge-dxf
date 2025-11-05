@@ -240,11 +240,11 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
             onTap={() => onSelect(shape.id)}
             onDragEnd={handleDragEnd}
           />
-          {toolMode === 'edit-nodes' && isSelected && linePoints.length >= 2 && (
+          {toolMode === 'edit-nodes' && isSelected && linePoints.length >= 4 && (
             <>
               <Circle
-                x={lineX}
-                y={lineY}
+                x={lineX + linePoints[0] * scale}
+                y={lineY + linePoints[1] * scale}
                 radius={5 / stageScale}
                 fill="white"
                 stroke="blue"
