@@ -245,7 +245,12 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
     if (!selectedId || isNaN(value)) return;
     updateShape(selectedId, { [field]: Math.max(0.1, value) });
   };
-  
+
+  const updateShapeColor = (field: 'fill' | 'stroke', color: string) => {
+    if (!selectedId) return;
+    updateShape(selectedId, { [field]: color });
+  };
+
   useEffect(() => {
     if (transformerRef.current) {
         if (selectedId && toolMode === 'select') {
@@ -344,6 +349,7 @@ export default function ShapeCanvas({ shapes, setShapes, slab }: ShapeCanvasProp
           onToggle={() => setSidebarOpen(!sidebarOpen)}
           selectedShape={selectedShape}
           onUpdateMeasurement={updateShapeMeasurement}
+          onUpdateColor={updateShapeColor}
           offsetValue={offsetValue}
           setOffsetValue={setOffsetValue}
           filletRadius={filletRadius}

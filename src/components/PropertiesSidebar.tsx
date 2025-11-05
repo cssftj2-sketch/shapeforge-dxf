@@ -10,6 +10,7 @@ interface PropertiesSidebarProps {
   onToggle: () => void;
   selectedShape: Shape | undefined;
   onUpdateMeasurement: (field: string, value: number) => void;
+  onUpdateColor: (field: 'fill' | 'stroke', color: string) => void;
   offsetValue: number;
   setOffsetValue: (value: number) => void;
   filletRadius: number;
@@ -21,6 +22,7 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
   onToggle,
   selectedShape,
   onUpdateMeasurement,
+  onUpdateColor,
   offsetValue,
   setOffsetValue,
   filletRadius,
@@ -160,6 +162,48 @@ export const PropertiesSidebar: React.FC<PropertiesSidebarProps> = ({
                     </div>
                   </>
                 )}
+              </div>
+
+              <div className="border-t pt-4 space-y-3">
+                <Label className="font-semibold">Appearance</Label>
+                
+                <div className="space-y-1">
+                  <Label className="text-xs">Fill Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={selectedShape.fill || '#ffffff'}
+                      onChange={(e) => onUpdateColor('fill', e.target.value)}
+                      className="w-16 h-9 p-1 cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      value={selectedShape.fill || '#ffffff'}
+                      onChange={(e) => onUpdateColor('fill', e.target.value)}
+                      className="flex-1"
+                      placeholder="#ffffff"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Stroke Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={selectedShape.stroke || '#000000'}
+                      onChange={(e) => onUpdateColor('stroke', e.target.value)}
+                      className="w-16 h-9 p-1 cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      value={selectedShape.stroke || '#000000'}
+                      onChange={(e) => onUpdateColor('stroke', e.target.value)}
+                      className="flex-1"
+                      placeholder="#000000"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="border-t pt-4 space-y-3">
