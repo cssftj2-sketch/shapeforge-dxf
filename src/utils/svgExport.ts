@@ -1,18 +1,25 @@
 import { Shape } from "@/types/shapes";
 
 export const exportToSVG = (shapes: Shape[], spacing: number, slab?: Shape): string => {
+  // Calculate offset for shapes if slab is included
+  const shapeOffsetX = (slab && slab.type === "slab") ? (slab.width * 10) + 50 : 0; // 50mm spacing between slab and shapes
+  
   // Calculate bounds to determine SVG viewBox
   let minX = 0, minY = 0, maxX = 0, maxY = 0;
   
-  const allShapes = slab ? [slab, ...shapes] : shapes;
+  // Include slab dimensions if present
+  if (slab && slab.type === "slab") {
+    maxX = Math.max(maxX, slab.width * 10);
+    maxY = Math.max(maxY, slab.height * 10);
+  }
   
-  allShapes.forEach(shape => {
-    const x = shape.x * 10; // Convert cm to mm
-    const y = shape.y * 10;
+  // Calculate shape bounds with offset
+  shapes.forEach(shape => {
+    const x = shapeOffsetX; // Start shapes at offset position
+    const y = 0;
     
     switch (shape.type) {
       case "rectangle":
-      case "slab":
         maxX = Math.max(maxX, x + shape.width * 10);
         maxY = Math.max(maxY, y + shape.height * 10);
         break;
@@ -41,9 +48,14 @@ export const exportToSVG = (shapes: Shape[], spacing: number, slab?: Shape): str
   svg += `<svg xmlns="http://www.w3.org/2000/svg" width="${width}mm" height="${height}mm" viewBox="${minX - 10} ${minY - 10} ${width} ${height}">\n`;
   svg += `  <g id="shapes" fill="none" stroke="black" stroke-width="0.5">\n`;
   
-  // Export each shape as a separate path or element
+  // Export slab first if included
+  if (slab && slab.type === "slab") {
+    svg += `    <rect id="slab" x="0" y="0" width="${slab.width * 10}" height="${slab.height * 10}" stroke="red" stroke-dasharray="5,5" />\n`;
+  }
+  
+  // Export each shape as a separate path or element (offset from slab)
   shapes.forEach((shape, index) => {
-    const x = shape.x * 10;
+    const x = shapeOffsetX + (shape.x * 10);
     const y = shape.y * 10;
     
     switch (shape.type) {
@@ -86,16 +98,8 @@ export const exportToSVG = (shapes: Shape[], spacing: number, slab?: Shape): str
         svg += `    <circle id="circle-${index}" cx="${x + shape.radius * 10}" cy="${y + shape.radius * 10}" r="${shape.radius * 10}" />\n`;
         break;
         
-      case "slab":
-        svg += `    <rect id="slab-${index}" x="${x}" y="${y}" width="${shape.width * 10}" height="${shape.height * 10}" />\n`;
-        break;
     }
   });
-  
-  // Export slab if included
-  if (slab && slab.type === "slab") {
-    svg += `    <rect id="slab" x="0" y="0" width="${slab.width * 10}" height="${slab.height * 10}" stroke="red" stroke-dasharray="5,5" />\n`;
-  }
   
   svg += `  </g>\n`;
   svg += `</svg>`;
