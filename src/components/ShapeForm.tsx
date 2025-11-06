@@ -11,9 +11,10 @@ interface ShapeFormProps {
   onAddShape: (shape: Shape) => void;
   editingShape?: Shape | null;
   onCancelEdit?: () => void;
+  slab?: Shape | null;
 }
 
-export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormProps) => {
+export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit, slab }: ShapeFormProps) => {
   const [shapeType, setShapeType] = useState<ShapeType>("rectangle");
   const [dimensions, setDimensions] = useState({
     width: "",
@@ -77,10 +78,29 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
     // Clear previous errors
     setErrors({});
     
+    // Calculate smart positioning for new shapes
+    const getSmartPosition = (shapeWidth: number, shapeHeight: number) => {
+      if (editingShape) {
+        return { x: editingShape.x, y: editingShape.y };
+      }
+      
+      const slabWidth = slab?.type === 'slab' ? slab.width : 80;
+      const slabHeight = slab?.type === 'slab' ? slab.height : 60;
+      
+      // Center the shape in the slab with some random offset
+      const randomOffsetX = (Math.random() - 0.5) * 10;
+      const randomOffsetY = (Math.random() - 0.5) * 10;
+      
+      const centerX = Math.max(0, Math.min(slabWidth - shapeWidth, (slabWidth - shapeWidth) / 2 + randomOffsetX));
+      const centerY = Math.max(0, Math.min(slabHeight - shapeHeight, (slabHeight - shapeHeight) / 2 + randomOffsetY));
+      
+      return { x: Math.round(centerX * 10) / 10, y: Math.round(centerY * 10) / 10 };
+    };
+    
     const baseShape = {
       id: editingShape?.id || crypto.randomUUID(),
-      x: editingShape?.x || 0,
-      y: editingShape?.y || 0,
+      x: 0,
+      y: 0,
     };
 
     let newShape: Shape | null = null;
@@ -91,11 +111,16 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
         isValid = validateDimension(dimensions.width, "width") && 
                   validateDimension(dimensions.height, "height");
         if (dimensions.width && dimensions.height && isValid) {
+          const width = parseFloat(dimensions.width);
+          const height = parseFloat(dimensions.height);
+          const pos = getSmartPosition(width, height);
           newShape = {
             ...baseShape,
             type: "rectangle",
-            width: parseFloat(dimensions.width),
-            height: parseFloat(dimensions.height),
+            x: pos.x,
+            y: pos.y,
+            width,
+            height,
           };
         }
         break;
@@ -125,9 +150,12 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
           }
           
           if (isValid) {
+            const pos = getSmartPosition(w, h);
             newShape = {
               ...baseShape,
               type: shapeType,
+              x: pos.x,
+              y: pos.y,
               width: w,
               height: h,
               legWidth: lw,
@@ -140,21 +168,31 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
         isValid = validateDimension(dimensions.base, "base") && 
                   validateDimension(dimensions.height, "height");
         if (dimensions.base && dimensions.height && isValid) {
+          const base = parseFloat(dimensions.base);
+          const height = parseFloat(dimensions.height);
+          const pos = getSmartPosition(base, height);
           newShape = {
             ...baseShape,
             type: "triangle",
-            base: parseFloat(dimensions.base),
-            height: parseFloat(dimensions.height),
+            x: pos.x,
+            y: pos.y,
+            base,
+            height,
           };
         }
         break;
       case "circle":
         isValid = validateDimension(dimensions.radius, "radius");
         if (dimensions.radius && isValid) {
+          const radius = parseFloat(dimensions.radius);
+          const diameter = radius * 2;
+          const pos = getSmartPosition(diameter, diameter);
           newShape = {
             ...baseShape,
             type: "circle",
-            radius: parseFloat(dimensions.radius),
+            x: pos.x,
+            y: pos.y,
+            radius,
           };
         }
         break;

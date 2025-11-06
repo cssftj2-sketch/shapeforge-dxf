@@ -327,6 +327,7 @@ const Index = () => {
                         onAddShape={handleAddShape} 
                         editingShape={editingShape}
                         onCancelEdit={handleCancelEdit}
+                        slab={slab}
                       />
                     </CardContent>
                   </Card>
