@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Rect, Circle, Line, Arc, Text, Group } from 'react-konva';
 import { Shape, ToolMode } from '../types/shapes';
 import { GRID_SIZE } from '../constants/canvas';
@@ -30,6 +30,30 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
   const strokeWidth = (isSelected ? 3 : 2) / stageScale;
   const measurementColor = isSelected ? '#3b82f6' : '#6b7280';
   const measurementBg = isSelected ? '#dbeafe' : '#f3f4f6';
+  const [hoveredNode, setHoveredNode] = useState<number | null>(null);
+
+  const nodeRadius = 6 / stageScale;
+  const nodeStrokeWidth = 2 / stageScale;
+
+  // Render a draggable node handle
+  const renderNode = (x: number, y: number, index: number, onDrag: (newX: number, newY: number) => void) => (
+    <Circle
+      key={`node-${index}`}
+      x={x}
+      y={y}
+      radius={hoveredNode === index ? nodeRadius * 1.3 : nodeRadius}
+      fill={hoveredNode === index ? '#3b82f6' : 'white'}
+      stroke="#3b82f6"
+      strokeWidth={nodeStrokeWidth}
+      draggable={toolMode === 'edit-nodes'}
+      onMouseEnter={() => setHoveredNode(index)}
+      onMouseLeave={() => setHoveredNode(null)}
+      onDragMove={(e) => {
+        onDrag(e.target.x(), e.target.y());
+      }}
+      hitStrokeWidth={20 / stageScale}
+    />
+  );
 
   const handleDragEnd = (e: any) => {
     onTransform(shape.id, {
@@ -134,6 +158,51 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
               node.scaleY(1);
             }}
           />
+          {/* Edit nodes mode - show corner handles */}
+          {toolMode === 'edit-nodes' && isSelected && (
+            <>
+              {/* Top-left corner */}
+              {renderNode(rectX, rectY, 0, (newX, newY) => {
+                const deltaX = (newX - rectX) / scale;
+                const deltaY = (newY - rectY) / scale;
+                onTransform(shape.id, {
+                  x: shape.x + deltaX,
+                  y: shape.y + deltaY,
+                  width: Math.max(0.5, shape.width! - deltaX),
+                  height: Math.max(0.5, shape.height! - deltaY)
+                });
+              })}
+              {/* Top-right corner */}
+              {renderNode(rectX + rectW, rectY, 1, (newX, newY) => {
+                const deltaX = (newX - (rectX + rectW)) / scale;
+                const deltaY = (newY - rectY) / scale;
+                onTransform(shape.id, {
+                  y: shape.y + deltaY,
+                  width: Math.max(0.5, shape.width! + deltaX),
+                  height: Math.max(0.5, shape.height! - deltaY)
+                });
+              })}
+              {/* Bottom-left corner */}
+              {renderNode(rectX, rectY + rectH, 2, (newX, newY) => {
+                const deltaX = (newX - rectX) / scale;
+                const deltaY = (newY - (rectY + rectH)) / scale;
+                onTransform(shape.id, {
+                  x: shape.x + deltaX,
+                  width: Math.max(0.5, shape.width! - deltaX),
+                  height: Math.max(0.5, shape.height! + deltaY)
+                });
+              })}
+              {/* Bottom-right corner */}
+              {renderNode(rectX + rectW, rectY + rectH, 3, (newX, newY) => {
+                const deltaX = (newX - (rectX + rectW)) / scale;
+                const deltaY = (newY - (rectY + rectH)) / scale;
+                onTransform(shape.id, {
+                  width: Math.max(0.5, shape.width! + deltaX),
+                  height: Math.max(0.5, shape.height! + deltaY)
+                });
+              })}
+            </>
+          )}
           {/* Measurement labels on all sides - clickable */}
           {renderMeasurementLabel(rectX + rectW / 2, rectY - 20, `${shape.width?.toFixed(1)} cm`, 0, 'width', shape.width)}
           {renderMeasurementLabel(rectX + rectW / 2, rectY + rectH + 20, `${shape.width?.toFixed(1)} cm`, 0, 'width', shape.width)}
@@ -191,6 +260,7 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
       const triY = shape.y * scale;
       const triBase = shape.base! * scale;
       const triHeight = shape.height! * scale;
+      const triPoints = [triBase / 2, 0, triBase, triHeight, 0, triHeight];
       
       return (
         <Group key={shape.id}>
@@ -199,11 +269,7 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
             id={shape.id}
             x={triX}
             y={triY}
-            points={[
-              triBase / 2, 0,
-              triBase, triHeight,
-              0, triHeight
-            ]}
+            points={triPoints}
             closed
             fill={shape.fill}
             stroke={shape.stroke}
@@ -213,6 +279,38 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
             onTap={() => onSelect(shape.id)}
             onDragEnd={handleDragEnd}
           />
+          {/* Edit nodes mode - show vertex handles */}
+          {toolMode === 'edit-nodes' && isSelected && (
+            <>
+              {/* Top vertex */}
+              {renderNode(triX + triPoints[0], triY + triPoints[1], 0, (newX, newY) => {
+                const newTop = (newY - triY) / scale;
+                const newCenter = (newX - triX) / scale;
+                const heightChange = shape.height! - newTop;
+                onTransform(shape.id, {
+                  y: shape.y + newTop,
+                  height: Math.max(0.5, heightChange),
+                  base: shape.base
+                });
+              })}
+              {/* Bottom-right vertex */}
+              {renderNode(triX + triPoints[2], triY + triPoints[3], 1, (newX, newY) => {
+                const newWidth = (newX - triX) / scale;
+                const newHeight = (newY - triY) / scale;
+                onTransform(shape.id, {
+                  base: Math.max(1, newWidth),
+                  height: Math.max(0.5, newHeight)
+                });
+              })}
+              {/* Bottom-left vertex */}
+              {renderNode(triX + triPoints[4], triY + triPoints[5], 2, (newX, newY) => {
+                const newHeight = (newY - triY) / scale;
+                onTransform(shape.id, {
+                  height: Math.max(0.5, newHeight)
+                });
+              })}
+            </>
+          )}
           {/* Base measurement - clickable */}
           {renderMeasurementLabel(triX + triBase / 2, triY + triHeight + 25, `B: ${shape.base?.toFixed(1)} cm`, 0, 'base', shape.base)}
           {/* Height measurement - clickable */}
@@ -240,38 +338,23 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
             onTap={() => onSelect(shape.id)}
             onDragEnd={handleDragEnd}
           />
-          {toolMode === 'edit-nodes' && isSelected && linePoints.length >= 4 && (
+          {/* Edit nodes mode - show all line points */}
+          {toolMode === 'edit-nodes' && isSelected && linePoints.length >= 2 && (
             <>
-              <Circle
-                x={lineX + linePoints[0] * scale}
-                y={lineY + linePoints[1] * scale}
-                radius={5 / stageScale}
-                fill="white"
-                stroke="blue"
-                strokeWidth={2 / stageScale}
-                draggable
-                onDragMove={(e) => {
-                  const newPoints = [...linePoints];
-                  newPoints[0] = (e.target.x() - lineX) / scale;
-                  newPoints[1] = (e.target.y() - lineY) / scale;
-                  onTransform(shape.id, { points: newPoints });
-                }}
-              />
-              <Circle
-                x={lineX + linePoints[2] * scale}
-                y={lineY + linePoints[3] * scale}
-                radius={5 / stageScale}
-                fill="white"
-                stroke="blue"
-                strokeWidth={2 / stageScale}
-                draggable
-                onDragMove={(e) => {
-                  const newPoints = [...linePoints];
-                  newPoints[2] = (e.target.x() - lineX) / scale;
-                  newPoints[3] = (e.target.y() - lineY) / scale;
-                  onTransform(shape.id, { points: newPoints });
-                }}
-              />
+              {Array.from({ length: linePoints.length / 2 }).map((_, i) => {
+                const pointIndex = i * 2;
+                return renderNode(
+                  lineX + linePoints[pointIndex] * scale,
+                  lineY + linePoints[pointIndex + 1] * scale,
+                  i,
+                  (newX, newY) => {
+                    const newPoints = [...linePoints];
+                    newPoints[pointIndex] = (newX - lineX) / scale;
+                    newPoints[pointIndex + 1] = (newY - lineY) / scale;
+                    onTransform(shape.id, { points: newPoints });
+                  }
+                );
+              })}
             </>
           )}
           {/* Line length measurement */}
@@ -344,6 +427,43 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
               onTap={() => onSelect(shape.id)}
               onDragEnd={handleDragEnd}
             />
+            {/* Edit nodes mode - show all L-shape vertices */}
+            {toolMode === 'edit-nodes' && isSelected && (
+              <>
+                {Array.from({ length: lPoints.length / 2 }).map((_, i) => {
+                  const pointIndex = i * 2;
+                  return renderNode(
+                    lX + lPoints[pointIndex],
+                    lY + lPoints[pointIndex + 1],
+                    i,
+                    (newX, newY) => {
+                      // For L-shapes, we calculate the change and update dimensions accordingly
+                      const deltaX = (newX - (lX + lPoints[pointIndex])) / scale;
+                      const deltaY = (newY - (lY + lPoints[pointIndex + 1])) / scale;
+                      
+                      // Simplified: Allow basic node dragging
+                      // More complex logic would involve determining which dimension to change
+                      // based on which vertex is being dragged
+                      if (i === 0) {
+                        // Top-left corner
+                        onTransform(shape.id, {
+                          x: shape.x + deltaX,
+                          y: shape.y + deltaY,
+                          width: Math.max(shape.legWidth + 0.5, shape.width - deltaX),
+                          height: Math.max(shape.legHeight + 0.5, shape.height - deltaY)
+                        });
+                      } else if (i === 2) {
+                        // Adjust leg dimensions
+                        onTransform(shape.id, {
+                          legWidth: Math.max(0.5, shape.legWidth + deltaX),
+                          legHeight: Math.max(0.5, shape.legHeight + deltaY)
+                        });
+                      }
+                    }
+                  );
+                })}
+              </>
+            )}
             {/* L-Shape measurements - clickable */}
             {renderMeasurementLabel(lX + w / 2, lY - 20, `${shape.width?.toFixed(1)} cm`, 0, 'width', shape.width)}
             {renderMeasurementLabel(lX - 35, lY + h / 2, `${shape.height?.toFixed(1)} cm`, -90, 'height', shape.height)}
