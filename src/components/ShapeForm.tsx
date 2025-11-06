@@ -101,6 +101,7 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit, slab }: Shap
       id: editingShape?.id || crypto.randomUUID(),
       x: 0,
       y: 0,
+      stroke: editingShape?.stroke || '#000000',
     };
 
     let newShape: Shape | null = null;
