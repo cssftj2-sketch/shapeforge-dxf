@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ShapeType, Shape } from "@/types/shapes";
 import { Plus, X, Edit3, Ruler, HelpCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ShapePalette } from "@/components/ShapePalette";
 
 interface ShapeFormProps {
   onAddShape: (shape: Shape) => void;
@@ -478,88 +478,18 @@ export const ShapeForm = ({ onAddShape, editingShape, onCancelEdit }: ShapeFormP
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="shapeType" className="text-body font-semibold">Shape Type</Label>
-        <Select value={shapeType} onValueChange={(value) => setShapeType(value as ShapeType)}>
-          <SelectTrigger className="glass-card h-11">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="glass-elevated">
-            <SelectItem value="slab" className="cursor-pointer">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{getShapeIcon("slab")}</span>
-                <div>
-                  <div className="font-medium">Slab</div>
-                  <div className="text-xs text-muted-foreground">{getShapeDescription("slab")}</div>
-                </div>
-              </div>
-            </SelectItem>
-            <SelectItem value="rectangle" className="cursor-pointer">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{getShapeIcon("rectangle")}</span>
-                <div>
-                  <div className="font-medium">Rectangle</div>
-                  <div className="text-xs text-muted-foreground">{getShapeDescription("rectangle")}</div>
-                </div>
-              </div>
-            </SelectItem>
-            <SelectItem value="l-shape-tl" className="cursor-pointer">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{getShapeIcon("l-shape-tl")}</span>
-                <div>
-                  <div className="font-medium">L-Shape (Top-Left)</div>
-                  <div className="text-xs text-muted-foreground">{getShapeDescription("l-shape-tl")}</div>
-                </div>
-              </div>
-            </SelectItem>
-            <SelectItem value="l-shape-tr" className="cursor-pointer">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{getShapeIcon("l-shape-tr")}</span>
-                <div>
-                  <div className="font-medium">L-Shape (Top-Right)</div>
-                  <div className="text-xs text-muted-foreground">{getShapeDescription("l-shape-tr")}</div>
-                </div>
-              </div>
-            </SelectItem>
-            <SelectItem value="l-shape-bl" className="cursor-pointer">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{getShapeIcon("l-shape-bl")}</span>
-                <div>
-                  <div className="font-medium">L-Shape (Bottom-Left)</div>
-                  <div className="text-xs text-muted-foreground">{getShapeDescription("l-shape-bl")}</div>
-                </div>
-              </div>
-            </SelectItem>
-            <SelectItem value="l-shape-br" className="cursor-pointer">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{getShapeIcon("l-shape-br")}</span>
-                <div>
-                  <div className="font-medium">L-Shape (Bottom-Right)</div>
-                  <div className="text-xs text-muted-foreground">{getShapeDescription("l-shape-br")}</div>
-                </div>
-              </div>
-            </SelectItem>
-            <SelectItem value="triangle" className="cursor-pointer">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{getShapeIcon("triangle")}</span>
-                <div>
-                  <div className="font-medium">Triangle</div>
-                  <div className="text-xs text-muted-foreground">{getShapeDescription("triangle")}</div>
-                </div>
-              </div>
-            </SelectItem>
-            <SelectItem value="circle" className="cursor-pointer">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{getShapeIcon("circle")}</span>
-                <div>
-                  <div className="font-medium">Circle</div>
-                  <div className="text-xs text-muted-foreground">{getShapeDescription("circle")}</div>
-                </div>
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <Label className="text-body font-semibold flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Shape Type
+        </Label>
+        <div className="h-[400px]">
+          <ShapePalette 
+            onSelectShape={(type) => setShapeType(type)} 
+            selectedShape={shapeType}
+          />
+        </div>
       </div>
       
       {renderInputs()}
