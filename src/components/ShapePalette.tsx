@@ -21,6 +21,12 @@ interface ShapeCategory {
 
 const shapeCategories: ShapeCategory[] = [
   {
+    label: "Workspace",
+    shapes: [
+      { type: "slab", icon: "▢", label: "Slab" },
+    ],
+  },
+  {
     label: "Formes récemment utilisées",
     shapes: [
       { type: "rectangle", icon: "▭", label: "Rectangle" },
@@ -56,7 +62,7 @@ const shapeCategories: ShapeCategory[] = [
 ];
 
 export const ShapePalette = ({ onSelectShape, selectedShape }: ShapePaletteProps) => {
-  const [openCategories, setOpenCategories] = useState<string[]>(["Rectangles"]);
+  const [openCategories, setOpenCategories] = useState<string[]>(["Workspace", "Rectangles"]);
 
   const toggleCategory = (label: string) => {
     setOpenCategories((prev) =>
